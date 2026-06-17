@@ -1,32 +1,38 @@
 from ..schemas import CheckResult
 
 async def check_llms_txt(llms_content: str) -> CheckResult:
-    """Validates the structure and layout of the root llms.txt file."""
-    if not llms_content or len(llms_content.strip()) == 0:
+    """Checks if the content contains a Markdown H1 heading (# ) and is longer than 20 characters."""
+    if not llms_content or not llms_content.strip():
         return CheckResult(
-            name="llms.txt Discovery File", score=0, max_score=10, passed=False,
+            name="llms.txt Discovery File",
+            score=0, max_score=10, passed=False,
             description="Checks for an llms.txt file at your domain root for developer agent context.",
-            finding="No llms.txt file was detected (404).",
-            fix="Create a markdown file at /llms.txt summarizing your context for developer assistants.",
-            details={"found": False}
+            finding="No llms.txt file was detected (404 or empty).",
+            fix="Create a markdown file at /llms.txt with an H1 heading and summary of your site.",
+            details={"found": False, "has_h1": False, "char_length": 0}
         )
 
-    # Basic structural check: look for markdown headings indicating a title/definition layout
-    has_title = llms_content.startswith("# ") or "\n# " in llms_content
-    
-    if has_title and len(llms_content) > 20:
-        return CheckResult(
-            name="llms.txt Discovery File", score=10, max_score=10, passed=True,
-            description="Checks for an llms.txt file at your domain root.",
-            finding="Valid and clean llms.txt file found at your root domain directory.",
-            fix="Keep your context file updated as your internal product surfaces or tools change.",
-            details={"found": True, "char_length": len(llms_content)}
-        )
+    has_h1 = "# " in llms_content
+    is_long_enough = len(llms_content.strip()) > 20
+
+    if has_h1 and is_long_enough:
+        score, passed, partial = 10, True, False
+        finding = "Valid llms.txt file found with H1 heading and sufficient content."
+    elif has_h1 and not is_long_enough:
+        score, passed, partial = 5, False, True
+        finding = "llms.txt has an H1 heading but content is too short (20 chars or fewer)."
+    elif not has_h1 and is_long_enough:
+        score, passed, partial = 5, False, True
+        finding = "llms.txt has content but is missing an H1 heading."
     else:
-        return CheckResult(
-            name="llms.txt Discovery File", score=5, max_score=10, passed=False, partial=True,
-            description="Checks for an llms.txt file at your domain root.",
-            finding="An llms.txt file exists, but it appears malformed or lacks typical H1 headers.",
-            fix="Format your llms.txt starting with an '# Project Title' string and markdown definitions.",
-            details={"found": True, "char_length": len(llms_content)}
-        )
+        score, passed, partial = 0, False, False
+        finding = "llms.txt file exists but lacks both an H1 heading and sufficient content."
+
+    return CheckResult(
+        name="llms.txt Discovery File",
+        score=score, max_score=10, passed=passed, partial=partial,
+        description="Checks for an llms.txt file at your domain root for developer agent context.",
+        finding=finding,
+        fix="Format your llms.txt starting with a '# Project Title' line followed by a paragraph of context.",
+        details={"found": True, "has_h1": has_h1, "char_length": len(llms_content.strip())}
+    )

@@ -1,41 +1,64 @@
 from bs4 import BeautifulSoup
 from ..schemas import CheckResult
 
+ESSENTIAL_TAGS = [
+    ("title", None),
+    ("meta", {"name": "description"}),
+    ("meta", {"property": "og:title"}),
+    ("meta", {"property": "og:description"}),
+]
+
 async def check_meta(html_content: str) -> CheckResult:
-    """Examines meta components to track citation data structural elements."""
+    """Checks for essential meta tags: <title>, <meta name="description">, <meta property="og:title">, <meta property="og:description">."""
     if not html_content:
         return CheckResult(
-            name="Meta Tags & Open Graph", score=0, max_score=10, passed=False,
-            description="Validates metadata fields for descriptive summarization loops.",
-            finding="Empty structural data layers encountered.", fix="Verify target HTML outputs load cleanly."
+            name="Meta Tags & Open Graph",
+            score=0, max_score=10, passed=False,
+            description="Checks for essential meta tags including title, description, and Open Graph tags.",
+            finding="No HTML content provided to parse.",
+            fix="Ensure your site returns HTML with proper <head> metadata.",
+            details={"tags_found": 0, "tags_total": 4}
         )
 
-    soup = BeautifulSoup(html_content, "html.parser")
-    
-    # Track essential elements
-    has_title = bool(soup.find("title"))
-    has_desc = bool(soup.find("meta", attrs={"name": "description"}))
-    has_og_title = bool(soup.find("meta", property="og:title"))
-    has_og_desc = bool(soup.find("meta", property="og:description"))
-    has_og_type = bool(soup.find("meta", property="og:type"))
-    has_canonical = bool(soup.find("link", rel="canonical"))
+    try:
+        soup = BeautifulSoup(html_content, "html.parser")
+        found_count = 0
 
-    tags = [has_title, has_desc, has_og_title, has_og_desc, has_og_type, has_canonical]
-    found_count = sum(1 for tag in tags if tag)
+        for tag_name, attrs in ESSENTIAL_TAGS:
+            if attrs:
+                if soup.find(tag_name, attrs=attrs):
+                    found_count += 1
+            else:
+                if soup.find(tag_name):
+                    found_count += 1
 
-    if found_count == 6:
-        score, passed, partial = 10, True, False
-        finding = "All core verification head components and tracking targets accounted for."
-    elif found_count >= 3:
-        score, passed, partial = 5, False, True
-        finding = f"Basic content descriptors exist, but missing key metadata items ({found_count}/6)."
-    else:
-        score, passed, partial = 0, False, False
-        finding = f"Inadequate document header structures located ({found_count}/6 fields populated)."
+        if found_count == 4:
+            score, passed, partial = 10, True, False
+            finding = "All essential meta tags (title, description, og:title, og:description) are present."
+        elif found_count >= 2:
+            score, passed, partial = int(10 * found_count / 4), False, True
+            finding = f"{found_count}/4 essential meta tags present."
+        elif found_count == 1:
+            score, passed, partial = int(10 * found_count / 4), False, True
+            finding = "Only 1/4 essential meta tags found."
+        else:
+            score, passed, partial = 0, False, False
+            finding = "No essential meta tags found in the HTML."
 
-    return CheckResult(
-        name="Meta Tags & Open Graph", score=score, max_score=10, passed=passed, partial=partial,
-        description="Checks title tags, tracking definitions, canonical roots, and structured semantic headers.",
-        finding=finding, fix="Populate complete meta descriptions and standard Open Graph entities inside your layout.",
-        details={"tags_found": found_count, "has_canonical": has_canonical, "has_description": has_desc}
-    )
+        return CheckResult(
+            name="Meta Tags & Open Graph",
+            score=score, max_score=10, passed=passed, partial=partial,
+            description="Checks for essential meta tags including title, description, and Open Graph tags.",
+            finding=finding,
+            fix="Add <title>, <meta name=\"description\">, <meta property=\"og:title\">, and <meta property=\"og:description\"> to your HTML.",
+            details={"tags_found": found_count, "tags_total": 4}
+        )
+    except Exception as e:
+        return CheckResult(
+            name="Meta Tags & Open Graph",
+            score=0, max_score=10, passed=False,
+            description="Checks for essential meta tags including title, description, and Open Graph tags.",
+            finding=f"Error parsing HTML: {str(e)}",
+            fix="Ensure your HTML is well-formed.",
+            details={"error": str(e)}
+        )

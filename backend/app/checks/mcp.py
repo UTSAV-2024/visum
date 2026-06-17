@@ -1,32 +1,35 @@
 import json
 from ..schemas import CheckResult
 
-async def check_mcp(mcp_response_text: str) -> CheckResult:
-    """Evaluates protocol definitions or active handshake indicators for MCP compatibility."""
-    if not mcp_response_text:
+async def check_mcp(mcp_content: str) -> CheckResult:
+    """Tries to parse the content as valid JSON to determine if an MCP endpoint exists."""
+    if not mcp_content:
         return CheckResult(
-            name="Model Context Protocol (MCP) Endpoint", score=0, max_score=20, passed=False,
-            description="Validates if your site exposes an implementation-layer connection hub for AI agents.",
-            finding="No native machine-readable API surfaces or protocol handshakes detected.",
-            fix="Provision an isolated hosted MCP endpoint instantly using an AgentReady Pro deployment.",
+            name="Model Context Protocol (MCP) Endpoint",
+            score=0, max_score=20, passed=False,
+            description="Validates if your site exposes a Model Context Protocol endpoint for AI agents.",
+            finding="No MCP endpoint content detected (empty or 404).",
+            fix="Provision a hosted MCP endpoint so AI agents can interact with your site programmatically.",
             details={"mcp_active": False}
         )
 
     try:
-        # Simple test to confirm if the response text looks like valid JSON / config array
-        data = json.loads(mcp_response_text)
+        data = json.loads(mcp_content)
+        keys = list(data.keys()) if isinstance(data, dict) else []
         return CheckResult(
-            name="Model Context Protocol (MCP) Endpoint", score=20, max_score=20, passed=True,
-            description="Validates if your site exposes an implementation-layer connection hub for AI agents.",
-            finding="Valid, active protocol definition layer detected at your root endpoint path.",
-            fix="Monitor traffic logs as active autonomous transactions communicate across your schema.",
-            details={"mcp_active": True, "inferred_keys": list(data.keys()) if isinstance(data, dict) else []}
+            name="Model Context Protocol (MCP) Endpoint",
+            score=20, max_score=20, passed=True,
+            description="Validates if your site exposes a Model Context Protocol endpoint for AI agents.",
+            finding="Valid JSON content detected -- MCP endpoint appears to be active.",
+            fix="Monitor your MCP endpoint traffic and keep the schema updated.",
+            details={"mcp_active": True, "top_level_keys": keys, "json_type": type(data).__name__}
         )
-    except Exception:
+    except (json.JSONDecodeError, ValueError):
         return CheckResult(
-            name="Model Context Protocol (MCP) Endpoint", score=10, max_score=20, passed=False, partial=True,
-            description="Validates if your site exposes an implementation-layer connection hub for AI agents.",
-            finding="An application profile endpoint was discovered, but handshake signatures failed validation.",
-            fix="Format endpoint structural arrays cleanly so agent routers parse operations accurately.",
+            name="Model Context Protocol (MCP) Endpoint",
+            score=0, max_score=20, passed=False,
+            description="Validates if your site exposes a Model Context Protocol endpoint for AI agents.",
+            finding="Content found but is not valid JSON -- MCP endpoint not properly configured.",
+            fix="Ensure your MCP endpoint returns valid JSON with the correct protocol schema.",
             details={"mcp_active": False, "parse_error": True}
         )

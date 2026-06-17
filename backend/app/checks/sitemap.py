@@ -2,40 +2,46 @@ from bs4 import BeautifulSoup
 from ..schemas import CheckResult
 
 async def check_sitemap(sitemap_xml: str) -> CheckResult:
-    """Confirms root sitemap files are structural and easily parseable by scrapers."""
-    if not sitemap_xml or len(sitemap_xml.strip()) == 0:
+    """Parses sitemap XML for valid <loc> tags using BeautifulSoup with the XML parser."""
+    if not sitemap_xml or not sitemap_xml.strip():
         return CheckResult(
-            name="Sitemap.xml Presence", score=0, max_score=5, passed=False,
-            description="Checks for directory sitemaps so crawling layers scan sub-pages easily.",
-            finding="No accessible sitemap array found at default discovery routes.",
-            fix="Generate a standard engine index map file and expose it directly at /sitemap.xml.",
-            details={"has_urls": False}
+            name="Sitemap.xml Presence",
+            score=0, max_score=5, passed=False,
+            description="Checks for a sitemap.xml file containing valid <loc> entries.",
+            finding="No sitemap.xml content provided (404 or empty).",
+            fix="Generate a sitemap.xml and expose it at /sitemap.xml on your site.",
+            details={"url_count": 0}
         )
 
     try:
-        # Quick validation using BeautifulSoup to look for url or loc XML nodes
         soup = BeautifulSoup(sitemap_xml, "xml")
-        urls = soup.find_all("loc")
-        
-        if urls:
+        locs = soup.find_all("loc")
+        url_count = len(locs)
+
+        if url_count > 0:
             return CheckResult(
-                name="Sitemap.xml Presence", score=5, max_score=5, passed=True,
-                description="Checks for directory sitemaps.",
-                finding=f"Valid and structured map active containing {len(urls)} indexed endpoint keys.",
-                fix="Maintain automatic re-generation routines to keep downstream route maps current.",
-                details={"url_count": len(urls)}
+                name="Sitemap.xml Presence",
+                score=5, max_score=5, passed=True,
+                description="Checks for a sitemap.xml file containing valid <loc> entries.",
+                finding=f"Valid sitemap found with {url_count} URL(s) indexed.",
+                fix="Keep your sitemap automatically regenerated as you add new pages.",
+                details={"url_count": url_count}
             )
         else:
             return CheckResult(
-                name="Sitemap.xml Presence", score=2, max_score=5, passed=False, partial=True,
-                description="Checks for directory sitemaps.",
-                finding="Sitemap file discovered but contains zero data address records.",
-                fix="Configure standard directory plugins to populate valid location parameters.",
+                name="Sitemap.xml Presence",
+                score=2, max_score=5, passed=False, partial=True,
+                description="Checks for a sitemap.xml file containing valid <loc> entries.",
+                finding="Sitemap file exists but contains no <loc> entries.",
+                fix="Populate your sitemap with valid <loc> tags pointing to your site pages.",
                 details={"url_count": 0}
             )
     except Exception as e:
         return CheckResult(
-            name="Sitemap.xml Presence", score=0, max_score=5, passed=False,
-            description="Checks for directory sitemaps.", finding=f"Processing exception: {str(e)}",
-            fix="Validate XML structural loops to eliminate syntax truncation errors."
+            name="Sitemap.xml Presence",
+            score=0, max_score=5, passed=False,
+            description="Checks for a sitemap.xml file containing valid <loc> entries.",
+            finding=f"Could not parse sitemap XML: {str(e)}",
+            fix="Ensure your sitemap is valid XML with proper <urlset> and <loc> tags.",
+            details={"error": str(e)}
         )
