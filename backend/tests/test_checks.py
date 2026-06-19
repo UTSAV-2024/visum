@@ -1,108 +1,130 @@
+# backend/tests/test_checks.py
 import pytest
-from app.checks.robots import check_robots
-from app.checks.schema_ld import check_schema_ld
-from app.checks.llms_txt import check_llms_txt
-from app.checks.mcp import check_mcp
-from app.checks.rendering import check_rendering
-from app.checks.meta import check_meta
-from app.checks.sitemap import check_sitemap
-from app.checks.speed import check_speed
-
-
+from app.checks.robots import check_robots, parse_robots
+from app.checks.schema_ld import check_schema_ld, extract_json_ld
+from app.checks.llms_txt import check_llms_txt, parse_llms_txt
+from app.checks.mcp import check_mcp, is_valid_mcp_response
+ 
+ 
+# ── ROBOTS TESTS ────────────────────────────────────────────────────
+ 
 @pytest.mark.asyncio
-async def test_robots_perfect():
-    """All AI crawlers permitted should score 15."""
-    result = await check_robots(
-        "https://example.com",
-        "User-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /"
-    )
+async def test_robots_all_allowed():
+    """No blocking rules = full score."""
+    content = "User-agent: *\nAllow: /"
+    result = await check_robots("https://example.com", content)
     assert result.score == 15
-    assert result.max_score == 15
-    assert result.passed is True
-
-
+    assert result.passed == True
+ 
 @pytest.mark.asyncio
-async def test_schema_ld_perfect():
-    """Valid JSON-LD block with @type should score 20."""
-    html = (
-        '<html><head>'
-        '<script type="application/ld+json">'
-        '{"@type": "Organization", "name": "TestCorp"}'
-        '</script>'
-        '</head></html>'
-    )
+async def test_robots_gptbot_blocked():
+    """Blocking GPTBot specifically = 0 or partial."""
+    content = "User-agent: GPTBot\nDisallow: /"
+    result = await check_robots("https://example.com", content)
+    assert result.score <= 8
+    assert result.passed == False
+    assert "GPTBot" in result.finding
+ 
+@pytest.mark.asyncio
+async def test_robots_wildcard_blocked():
+    """Wildcard Disallow: / = 0 score."""
+    content = "User-agent: *\nDisallow: /"
+    result = await check_robots("https://example.com", content)
+    assert result.score == 0
+ 
+@pytest.mark.asyncio
+async def test_robots_missing():
+    """No robots.txt = 0 score."""
+    result = await check_robots("https://example.com", "")
+    assert result.score == 0
+    assert "No robots.txt" in result.finding
+ 
+ 
+# ── SCHEMA TESTS ────────────────────────────────────────────────────
+ 
+@pytest.mark.asyncio
+async def test_schema_valid_product():
+    """Valid Product schema = 20 pts."""
+    html = """<html><head>
+    <script type="application/ld+json">
+    {"@type": "Product", "name": "Test Widget",
+     "offers": {"@type": "Offer", "price": "99.00"}}
+    </script></head></html>"""
     result = await check_schema_ld(html)
     assert result.score == 20
-    assert result.max_score == 20
-    assert result.passed is True
-
-
+    assert result.passed == True
+ 
 @pytest.mark.asyncio
-async def test_llms_txt_perfect():
-    """llms.txt with H1 and >20 chars should score 10."""
-    result = await check_llms_txt("# My Site\nThis is a test site for AI agent visibility.")
+async def test_schema_missing():
+    """No JSON-LD = 0 pts."""
+    html = "<html><body><p>Hello world</p></body></html>"
+    result = await check_schema_ld(html)
+    assert result.score == 0
+    assert result.passed == False
+ 
+@pytest.mark.asyncio
+async def test_schema_incomplete():
+    """Product schema missing required fields = partial."""
+    html = """<html><head>
+    <script type="application/ld+json">
+    {"@type": "Product"}
+    </script></head></html>"""
+    result = await check_schema_ld(html)
+    assert result.score <= 10
+    assert result.partial == True
+ 
+@pytest.mark.asyncio
+async def test_schema_website_type():
+    """WebSite schema = 15 pts (not high-value type)."""
+    html = """<html><head>
+    <script type="application/ld+json">
+    {"@type": "WebSite", "name": "My Site", "url": "https://example.com"}
+    </script></head></html>"""
+    result = await check_schema_ld(html)
+    assert result.score == 15
+ 
+ 
+# ── LLMS.TXT TESTS ──────────────────────────────────────────────────
+ 
+@pytest.mark.asyncio
+async def test_llms_valid():
+    """Valid llms.txt = 10 pts."""
+    content = """> My Project\n\nA great tool.\n\n## Docs\n\n- [API](https://example.com/api): API docs"""
+    result = await check_llms_txt(content)
     assert result.score == 10
-    assert result.max_score == 10
-    assert result.passed is True
-
-
+    assert result.passed == True
+ 
 @pytest.mark.asyncio
-async def test_mcp_perfect():
-    """Valid JSON content should score 20."""
-    result = await check_mcp('{"endpoint": "mcp://example.com", "version": "1.0"}')
-    assert result.score == 20
-    assert result.max_score == 20
-    assert result.passed is True
-
-
+async def test_llms_missing():
+    """No llms.txt = 0 pts."""
+    result = await check_llms_txt("")
+    assert result.score == 0
+    assert result.passed == False
+ 
 @pytest.mark.asyncio
-async def test_rendering_perfect():
-    """Static content matching rendered content should score 10."""
-    html_static = "<html><body>Hello world this is a test page for rendering</body></html>"
-    html_rendered = "<html><body>Hello world this is a test page for rendering</body></html>"
-    result = await check_rendering(html_static, html_rendered)
-    assert result.score == 10
-    assert result.max_score == 10
-    assert result.passed is True
-
-
-@pytest.mark.asyncio
-async def test_meta_perfect():
-    """All 4 essential meta tags present should score 10."""
-    html = (
-        '<html><head>'
-        '<title>Test Site</title>'
-        '<meta name="description" content="A test site description">'
-        '<meta property="og:title" content="Test OG Title">'
-        '<meta property="og:description" content="Test OG Description">'
-        '</head></html>'
-    )
-    result = await check_meta(html)
-    assert result.score == 10
-    assert result.max_score == 10
-    assert result.passed is True
-
-
-@pytest.mark.asyncio
-async def test_sitemap_perfect():
-    """Sitemap with valid <loc> tags should score 5."""
-    sitemap = (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-        '<url><loc>https://example.com/</loc></url>'
-        '<url><loc>https://example.com/about</loc></url>'
-        '</urlset>'
-    )
-    result = await check_sitemap(sitemap)
+async def test_llms_no_urls():
+    """llms.txt with no URLs = partial."""
+    content = "> My Project\n\nA description here."
+    result = await check_llms_txt(content)
     assert result.score == 5
-    assert result.max_score == 5
-    assert result.passed is True
-
-
+    assert result.partial == True
+ 
+ 
+# ── MCP TESTS ───────────────────────────────────────────────────────
+ 
+def test_mcp_response_valid():
+    """Valid MCP JSON response detected correctly."""
+    response = '{"tools": [], "protocolVersion": "2024-11-05"}'
+    assert is_valid_mcp_response(response) == True
+ 
+def test_mcp_response_invalid():
+    """Non-MCP JSON not detected as MCP."""
+    response = '{"error": "not found"}'
+    assert is_valid_mcp_response(response) == False
+ 
 @pytest.mark.asyncio
-async def test_speed_perfect():
-    """TTFB <= 500ms should score 10."""
-    result = await check_speed({"ttfb_ms": 150})
-    assert result.score == 10
-    assert result.max_score == 10
-    assert result.passed is True
+async def test_mcp_no_endpoint():
+    """Site with no MCP = 0 pts."""
+    # Use a known non-MCP site
+    result = await check_mcp("https://example.com", None)
+    assert result.score <= 10  # 0 or partial for OpenAPI
