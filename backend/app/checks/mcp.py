@@ -31,8 +31,8 @@ def is_valid_mcp_response(content: str) -> bool:
         mcp_indicators = ["tools", "resources", "prompts", "capabilities", "protocolVersion"]
         return any(key in data for key in mcp_indicators)
     except (json.JSONDecodeError, TypeError):
-        # Could be SSE stream or other format
-        return "mcp" in content.lower() or "protocol" in content.lower()
+        # Could be SSE stream — check for MCP protocol keywords
+        return "mcp" in content.lower()
  
  
 def is_valid_openapi_response(content: str) -> bool:

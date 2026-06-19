@@ -42,7 +42,7 @@ async def scan(request: ScanRequest):
     try:
         # Crawl the site
         crawl_data = await crawler.crawl(url)
-        crawl_data["base_url"] = crawler._get_base_url(url)
+        crawl_data["base_url"] = crawler.get_base_url(url)
  
         # Run all 8 checks
         result = await run_scan(crawl_data)

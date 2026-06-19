@@ -128,3 +128,95 @@ async def test_mcp_no_endpoint():
     # Use a known non-MCP site
     result = await check_mcp("https://example.com", None)
     assert result.score <= 10  # 0 or partial for OpenAPI
+# Add these to backend/tests/test_checks.py
+ 
+from app.checks.rendering import check_rendering, calculate_content_ratio
+from app.checks.meta      import check_meta, extract_meta
+from app.checks.sitemap   import check_sitemap, parse_sitemap
+from app.checks.speed     import check_speed
+ 
+ 
+# ── RENDERING TESTS ─────────────────────────────────────────────────
+ 
+@pytest.mark.asyncio
+async def test_rendering_good_ssr():
+    """Site with good SSR scores 10/10."""
+    static = "<html><body><p>Product name</p><p>Price $99</p></body></html>"
+    rendered = "<html><body><p>Product name</p><p>Price $99</p><p>Extra JS</p></body></html>"
+    result = await check_rendering(static, rendered)
+    assert result.score >= 8
+ 
+@pytest.mark.asyncio
+async def test_rendering_pure_spa():
+    """Pure SPA with empty static HTML scores 0/10."""
+    static   = "<html><body><div id=app></div></body></html>"
+    rendered = "<html><body><div id=app><h1>Title</h1><p>Description</p></div></body></html>"
+    result = await check_rendering(static, rendered)
+    assert result.score <= 5
+ 
+ 
+# ── META TESTS ──────────────────────────────────────────────────────
+ 
+@pytest.mark.asyncio
+async def test_meta_all_present():
+    """All 6 meta tags present scores 10/10."""
+    html = """<html><head>
+    <title>Best Product Store - Buy Online</title>
+    <meta name="description" content="The best products at the best prices. Shop now and save up to 50 percent.">
+    <meta property="og:title" content="Best Product Store">
+    <meta property="og:description" content="Shop the best products online.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="https://example.com">
+    </head></html>"""
+    result = await check_meta(html)
+    assert result.score == 10
+    assert result.passed == True
+ 
+@pytest.mark.asyncio
+async def test_meta_missing_all():
+    """No meta tags scores 0/10."""
+    result = await check_meta("<html><body><p>Hello</p></body></html>")
+    assert result.score == 0
+ 
+ 
+# ── SITEMAP TESTS ───────────────────────────────────────────────────
+ 
+@pytest.mark.asyncio
+async def test_sitemap_valid():
+    """Valid sitemap with lastmod scores 5/5."""
+    xml = """<?xml version="1.0"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url><loc>https://example.com</loc><lastmod>2026-01-01</lastmod></url>
+    </urlset>"""
+    result = await check_sitemap(xml)
+    assert result.score == 5
+    assert result.passed == True
+ 
+@pytest.mark.asyncio
+async def test_sitemap_missing():
+    """No sitemap scores 0/5."""
+    result = await check_sitemap("")
+    assert result.score == 0
+ 
+ 
+# ── SPEED TESTS ─────────────────────────────────────────────────────
+ 
+@pytest.mark.asyncio
+async def test_speed_fast():
+    """Fast page scores 10/10."""
+    result = await check_speed({"ttfb_ms": 200, "load_ms": 1200})
+    assert result.score == 10
+    assert result.passed == True
+ 
+@pytest.mark.asyncio
+async def test_speed_slow():
+    """Slow page scores 0/10."""
+    result = await check_speed({"ttfb_ms": 2000, "load_ms": 5000})
+    assert result.score == 0
+    assert result.passed == False
+ 
+@pytest.mark.asyncio
+async def test_speed_no_data():
+    """Missing performance data returns partial."""
+    result = await check_speed({})
+    assert result.partial == True

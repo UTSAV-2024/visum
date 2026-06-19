@@ -94,10 +94,12 @@ async def check_robots(base_url: str, robots_content: str = "") -> CheckResult:
     blocked = [bot for bot, status in bot_results.items() if status == "blocked"]
     explicitly_allowed = [bot for bot, status in bot_results.items() if status == "allowed"]
  
-    # All wildcarded and no specific blocks = good
+    # If wildcard blocks all but AI bots have explicit Allow, score correctly
     all_wildcard_blocked = "/" in wildcard_disallows and len(blocked) == 0
+    # Check if any AI bot has an explicit Allow despite wildcard block
+    has_ai_explicit_allow = any(status == "allowed" for status in bot_results.values())
  
-    if all_wildcard_blocked:
+    if all_wildcard_blocked and not has_ai_explicit_allow:
         score, passed, partial = 0, False, False
         finding = "Wildcard Disallow: / blocks all crawlers including AI agents."
     elif len(blocked) == 0:
