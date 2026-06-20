@@ -1,0 +1,17 @@
+{
+  "agents": [
+    "claude-code",
+    "cursor",
+    "codex",
+    "antigravity",
+    "command-code",
+    "gemini-cli",
+    "github-copilot",
+    "kilo",
+    "kimi-cli",
+    "openclaw",
+    "opencode",
+    "qwen-code",
+    "windsurf"
+  ]
+}

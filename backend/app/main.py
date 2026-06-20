@@ -1,62 +1,248 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+# backend/app/main.py
+import os
+import re
+import logging
+import asyncio
+import uuid
+import time
+from datetime import datetime, timezone
+from typing import Dict
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from .schemas import ScanRequest, ScanResponse, ScanStatus
+from fastapi.responses import JSONResponse
+from .schemas import (
+    ScanRequest,
+    ScanResponse,
+    ScanStatus,
+    ScanStatusResponse,
+)
 from .crawler import SiteCrawler
 from .scorer import run_scan
-import os
-import uuid
-from datetime import datetime
- 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(
-    title="AgentReady API",
-    description="AI agent readiness scanner for non-Shopify websites",
+    title="Visum API",
+    description="Agent readiness scanner for non-Shopify websites",
     version="0.1.0"
 )
- 
+
+# ── CORS ─────────────────────────────────────────────────────────────
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
- 
-crawler = SiteCrawler(timeout_ms=int(os.getenv("CRAWLER_TIMEOUT_MS", 30000)))
- 
-@app.get("/health")
-async def health():
-    return {"status": "ok", "version": "0.1.0"}
- 
-@app.post("/scan", response_model=ScanResponse)
-async def scan(request: ScanRequest):
-    """
-    Main endpoint. Accepts a URL, crawls it, runs 8 checks, returns score.
-    This is synchronous for V1 — user waits for result (15-30 seconds).
-    V2 will use background tasks + websocket for real-time progress.
-    """
-    # Basic URL validation
-    url = request.url.strip()
+
+# ── Concurrency & Rate Limiting ──────────────────────────────────────
+MAX_CONCURRENT_SCANS = int(os.getenv("MAX_CONCURRENT_SCANS", "5"))
+SCAN_SEMAPHORE_WAIT_SECONDS = int(os.getenv("SCAN_SEMAPHORE_WAIT_SECONDS", "30"))
+MAX_SCAN_CACHE_SIZE = int(os.getenv("MAX_SCAN_CACHE_SIZE", "1000"))
+SCAN_CACHE_TTL_SECONDS = int(os.getenv("SCAN_CACHE_TTL_SECONDS", "3600"))
+
+scan_semaphore = asyncio.Semaphore(MAX_CONCURRENT_SCANS)
+scan_tracker: Dict[str, dict] = {}
+
+crawler = SiteCrawler(
+    timeout_ms=int(os.getenv("CRAWLER_TIMEOUT_MS", "60000"))
+)
+
+
+def _cleanup_old_scans():
+    """Remove completed/failed scans older than SCAN_CACHE_TTL_SECONDS to prevent memory leaks."""
+    now = time.time()
+    stale_keys = [
+        sid for sid, info in scan_tracker.items()
+        if info.get("completed_at")
+        and (now - info["completed_at"]) > SCAN_CACHE_TTL_SECONDS
+    ]
+    for sid in stale_keys:
+        del scan_tracker[sid]
+    if stale_keys:
+        logger.info(f"Cleaned up {len(stale_keys)} stale scan records")
+    if len(scan_tracker) > MAX_SCAN_CACHE_SIZE:
+        sorted_keys = sorted(scan_tracker.keys(), key=lambda k: scan_tracker[k].get("created_at", 0))
+        excess = len(scan_tracker) - MAX_SCAN_CACHE_SIZE
+        for sid in sorted_keys[:excess]:
+            del scan_tracker[sid]
+        logger.info(f"Hard cap cleanup: removed {excess} oldest scan records")
+
+
+_URL_REGEX = re.compile(
+    r"^https?://"
+    r"([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+"
+    r"[a-zA-Z]{2,}"
+    r"(:\d+)?"
+    r"(/[^\s]*)?$"
+)
+
+
+def _validate_url(url: str) -> str:
+    """Validate and normalise a URL. Returns normalised URL or raises HTTPException."""
+    url = url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
- 
+    if not _URL_REGEX.match(url):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid URL format: '{url}'. Must be a valid http(s) URL."
+        )
     try:
-        # Crawl the site
-        crawl_data = await crawler.crawl(url)
-        crawl_data["base_url"] = crawler.get_base_url(url)
- 
-        # Run all 8 checks
-        result = await run_scan(crawl_data)
- 
-        scan_id = str(uuid.uuid4())
-        return ScanResponse(scan_id=scan_id, result=result)
- 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Scan failed: {str(e)}")
- 
+        from urllib.parse import urlparse
+        import ipaddress
+        import socket
+        hostname = urlparse(url).hostname
+        if hostname:
+            if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+                raise HTTPException(status_code=400, detail="Scanning internal/localhost URLs is not allowed.")
+            try:
+                addr = socket.getaddrinfo(hostname, None)
+                for _family, _type, _proto, _canonname, sockaddr in addr:
+                    ip = ipaddress.ip_address(sockaddr[0])
+                    if ip.is_private or ip.is_loopback or ip.is_link_local:
+                        raise HTTPException(status_code=400, detail=f"Scanning private/internal IP addresses is not allowed: {ip}")
+            except (socket.gaierror, ValueError):
+                pass
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+    return url
+
+
+# ── Endpoints ────────────────────────────────────────────────────────
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @app.get("/")
 async def root():
     return {
-        "message": "AgentReady API",
+        "message": "Visum Agent Readiness Scanner",
         "docs": "/docs",
-        "scan": "POST /scan with {'url': 'https://yoursite.com'}"
+        "scan": "POST /scan with {'url': 'https://yoursite.com'}",
+        "status": "LIVE",
     }
+
+
+@app.get("/status/{scan_id}", response_model=ScanStatusResponse)
+async def get_scan_status(scan_id: str):
+    """Get the status of a scan by scan_id."""
+    info = scan_tracker.get(scan_id)
+    if info is None:
+        raise HTTPException(status_code=404, detail=f"Scan '{scan_id}' not found")
+    return ScanStatusResponse(
+        scan_id=scan_id,
+        url=info.get("url", ""),
+        status=info["status"],
+        total_score=info.get("total_score"),
+        band=info.get("band"),
+        error=info.get("error"),
+        created_at=info.get("created_at", ""),
+        completed_at=str(info.get("completed_at")) if info.get("completed_at") else None,
+    )
+
+
+@app.post("/scan", response_model=ScanResponse)
+async def scan(request: ScanRequest):
+    """Crawl a URL and run all 8 checks. Returns ScanResponse with results."""
+    url = _validate_url(request.url)
+    scan_id = str(uuid.uuid4())
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    scan_tracker[scan_id] = {
+        "url": url,
+        "status": ScanStatus.PENDING,
+        "created_at": now_iso,
+        "completed_at": None,
+        "total_score": None,
+        "band": None,
+        "error": None,
+    }
+    logger.info(f"[{scan_id}] Scan requested: {url}")
+
+    try:
+        try:
+            await asyncio.wait_for(
+                scan_semaphore.acquire(),
+                timeout=SCAN_SEMAPHORE_WAIT_SECONDS
+            )
+        except asyncio.TimeoutError:
+            scan_tracker[scan_id]["status"] = ScanStatus.FAILED
+            scan_tracker[scan_id]["error"] = "Semaphore timeout"
+            scan_tracker[scan_id]["completed_at"] = time.time()
+            raise HTTPException(status_code=503, detail="Server busy. Please retry later.")
+
+        scan_tracker[scan_id]["status"] = ScanStatus.RUNNING
+
+        try:
+            logger.info(f"[{scan_id}] Crawling...")
+            crawl_data = await crawler.crawl(url)
+            if crawl_data is None:
+                raise HTTPException(status_code=500, detail="Crawler returned None")
+            logger.info(f"[{scan_id}] Crawl done.")
+            result = await run_scan(crawl_data)
+            logger.info(f"[{scan_id}] Score: {result.total_score}/100 band={result.band}")
+            scan_tracker[scan_id].update({
+                "status": ScanStatus.COMPLETED,
+                "total_score": result.total_score,
+                "band": result.band,
+                "completed_at": time.time(),
+            })
+            return ScanResponse(scan_id=scan_id, result=result, status=ScanStatus.COMPLETED)
+        finally:
+            scan_semaphore.release()
+            logger.info(f"[{scan_id}] Semaphore released")
+
+    except HTTPException:
+        scan_tracker[scan_id]["status"] = ScanStatus.FAILED
+        scan_tracker[scan_id]["error"] = str(scan_tracker[scan_id].get("error", ""))
+        scan_tracker[scan_id]["completed_at"] = time.time()
+        raise
+    except asyncio.TimeoutError:
+        logger.error(f"[{scan_id}] Timeout during scan")
+        scan_tracker[scan_id]["status"] = ScanStatus.FAILED
+        scan_tracker[scan_id]["error"] = "Scan timeout"
+        scan_tracker[scan_id]["completed_at"] = time.time()
+        raise HTTPException(status_code=408, detail="Scan timeout.")
+    except Exception as e:
+        logger.error(f"[{scan_id}] Exception: {type(e).__name__}: {str(e)}", exc_info=True)
+        scan_tracker[scan_id]["status"] = ScanStatus.FAILED
+        scan_tracker[scan_id]["error"] = str(e)
+        scan_tracker[scan_id]["completed_at"] = time.time()
+        raise HTTPException(status_code=500, detail=f"Scan failed: {str(e)}")
+    finally:
+        _cleanup_old_scans()
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    status_code = exc.status_code
+    detail = exc.detail if exc.detail else "An error occurred"
+    if status_code >= 500:
+        logger.error(f"HTTP {status_code}: {detail}")
+    elif status_code in (400, 422):
+        logger.info(f"HTTP {status_code}: {detail}")
+    return JSONResponse(status_code=status_code, content={"detail": detail, "status_code": status_code})
+
+
+@app.on_event("startup")
+async def startup():
+    logger.info(f"Visum API starting: max_concurrent={MAX_CONCURRENT_SCANS}, cache_ttl={SCAN_CACHE_TTL_SECONDS}s, cache_max={MAX_SCAN_CACHE_SIZE}")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    logger.info(f"Visum API shutting down. Active tracked scans: {len(scan_tracker)}")

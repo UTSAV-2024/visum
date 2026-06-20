@@ -38,3 +38,15 @@ class ScanResponse(BaseModel):
     scan_id: str
     result:  ScanResult
     status:  ScanStatus = ScanStatus.COMPLETED
+
+
+class ScanStatusResponse(BaseModel):
+    """Response model for GET /status/{scan_id}."""
+    scan_id: str
+    url: str = ""
+    status: ScanStatus
+    total_score: Optional[int] = None
+    band: Optional[str] = None
+    error: Optional[str] = None
+    created_at: str = ""
+    completed_at: Optional[str] = None
