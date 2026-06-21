@@ -5,6 +5,8 @@ import logging
 import asyncio
 import uuid
 import time
+from pathlib import Path
+from dotenv import load_dotenv
 from datetime import datetime, timezone
 from typing import Dict
 from fastapi import FastAPI, HTTPException, Request
@@ -18,6 +20,23 @@ from .schemas import (
 )
 from .crawler import SiteCrawler
 from .scorer import run_scan
+import json
+from sqlalchemy import create_engine, text
+BASE_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(BASE_DIR / ".env.local")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = (
+    create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=300,
+    )
+    if DATABASE_URL
+    else None
+)
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -159,6 +178,7 @@ async def get_scan_status(scan_id: str):
 async def scan(request: ScanRequest):
     """Crawl a URL and run all 8 checks. Returns ScanResponse with results."""
     url = _validate_url(request.url)
+    email=request.email
     scan_id = str(uuid.uuid4())
     now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -194,6 +214,44 @@ async def scan(request: ScanRequest):
                 raise HTTPException(status_code=500, detail="Crawler returned None")
             logger.info(f"[{scan_id}] Crawl done.")
             result = await run_scan(crawl_data)
+            if engine:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(
+                            text("""
+                                INSERT INTO scans (
+                                    scan_id,
+                                    url,
+                                    total_score,
+                                    band,
+                                    checks,
+                                    scan_time_ms,
+                                    email
+                                )
+                                VALUES (
+                                    :scan_id,
+                                    :url,
+                                    :total_score,
+                                    :band,
+                                    CAST(:checks AS jsonb),
+                                    :scan_time_ms,
+                                    :email
+                                )
+                            """),
+                            {
+                                "scan_id": scan_id,
+                                "url": url,
+                                "total_score": result.total_score,
+                                "band": result.band,
+                                "checks": json.dumps(
+                                    json.loads(result.model_dump_json())["checks"]
+                                ),
+                                "scan_time_ms": result.scan_time_ms,
+                                "email": email,
+                            },
+                        )
+                except Exception as e:
+                    logger.warning(f"Database insert failed: {e}")     
             logger.info(f"[{scan_id}] Score: {result.total_score}/100 band={result.band}")
             scan_tracker[scan_id].update({
                 "status": ScanStatus.COMPLETED,

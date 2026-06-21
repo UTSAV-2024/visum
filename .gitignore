@@ -24,3 +24,4 @@ playwright-report/
 test-results/
 backend/.env
 backend/.env.example
+.env.local

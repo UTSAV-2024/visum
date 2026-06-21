@@ -1,7 +1,6 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, EmailStr
 from typing import Optional, List
 from enum import Enum
- 
 class ScanStatus(str, Enum):
     PENDING   = "pending"
     RUNNING   = "running"
@@ -32,7 +31,7 @@ class ScanResult(BaseModel):
  
 class ScanRequest(BaseModel):
     url: str                 # we validate manually, not with HttpUrl
-    email: Optional[str] = None  # optional, for follow-up
+    email: EmailStr | None = None  # optional, for follow-up
  
 class ScanResponse(BaseModel):
     scan_id: str
