@@ -15,7 +15,7 @@ export default function Home() {
   }
 
   function handleScanEnd(data) {
-    router.push("/result");
+    router.push("/email-gate");
   }
 
   return (

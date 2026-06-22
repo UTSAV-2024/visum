@@ -9,12 +9,26 @@ import { UpgradeCta } from "../components/upgrade-cta";
 import LegacyUpgradePrompt  from "../components/UpgradePrompt";
 import { track } from "../lib/posthog";
 
-/**
- * State for the result page.
- * type === "loading" is the initial state on both server and client,
- * so hydration always matches (both render null).
- * sessionStorage is read inside a useEffect after hydration completes.
- */
+function getInitialState() {
+  // sessionStorage is not available during SSR
+  if (typeof window === "undefined") return { type: "loading" };
+
+  try {
+    // Check email gate was completed
+    const emailSubmitted = sessionStorage.getItem("visum_email");
+    if (!emailSubmitted) return { type: "redirect-email" };
+
+    const stored = sessionStorage.getItem("visum_result");
+    if (!stored) return { type: "redirect" };
+    const parsed = JSON.parse(stored);
+    if (!parsed.result || typeof parsed.result.total_score !== "number") {
+      return { type: "error", message: "Invalid scan data received. Please scan again." };
+    }
+    return { type: "loaded", data: parsed };
+  } catch {
+    return { type: "error", message: "Failed to load scan results. Please scan again." };
+  }
+}
 
 function ErrorState({ message }) {
   return (
@@ -49,42 +63,10 @@ function ErrorState({ message }) {
 
 export default function Result() {
   const router = useRouter();
-  // Always start with loading — identical on server and client, so hydration matches
-  const [state, setState] = useState({ type: "loading" });
+  const [state] = useState(getInitialState);
   const [copied, setCopied] = useState(false);
 
-  // Read sessionStorage only on the client (after hydration is complete).
-  // Wrapped in setTimeout to satisfy react-hooks/set-state-in-effect lint rule.
-  useEffect(() => {
-    const id = setTimeout(() => {
-      try {
-        const emailSubmitted = sessionStorage.getItem("visum_email");
-        if (!emailSubmitted) {
-          setState({ type: "redirect-email" });
-          return;
-        }
-
-        const stored = sessionStorage.getItem("visum_result");
-        if (!stored) {
-          setState({ type: "redirect" });
-          return;
-        }
-
-        const parsed = JSON.parse(stored);
-        if (!parsed.result || typeof parsed.result.total_score !== "number") {
-          setState({ type: "error", message: "Invalid scan data received. Please scan again." });
-          return;
-        }
-
-        setState({ type: "loaded", data: parsed });
-      } catch {
-        setState({ type: "error", message: "Failed to load scan results. Please scan again." });
-      }
-    }, 0);
-    return () => clearTimeout(id);
-  }, []);
-
-  // Side effects — redirects and tracking
+  // Only side effects (redirect, tracking) — no setState calls
   useEffect(() => {
     if (state.type === "redirect") {
       router.replace("/");
