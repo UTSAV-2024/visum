@@ -1,30 +1,15 @@
 export default function UpgradePrompt({ cta }) {
   return (
-    <div style={{
-      background: "#1B2A4A",
-      borderRadius: 12,
-      padding: "24px",
-      marginBottom: 24,
-      textAlign: "center",
-    }}>
-      <div style={{ fontSize: 16, color: "#FFFFFF", fontWeight: 600, marginBottom: 8 }}>
+    <div className="bg-card border border-border rounded-xl p-6 sm:p-8 mb-6 text-center">
+      <p className="text-base sm:text-lg text-foreground font-semibold mb-2 leading-snug">
         {cta}
-      </div>
-      <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 16 }}>
-        Visum Pro · $149/month · Hosted MCP server + weekly AI monitoring
-      </div>
+      </p>
+      <p className="text-xs sm:text-sm text-muted-foreground mb-4">
+        Visum Pro &middot; $149/month &middot; Hosted MCP server + weekly AI monitoring
+      </p>
       <a
         href="mailto:utsav@visum.io?subject=Visum Pro Interest"
-        style={{
-          background: "#2563EB",
-          color: "#FFFFFF",
-          padding: "10px 28px",
-          borderRadius: 8,
-          fontWeight: 600,
-          fontSize: 14,
-          textDecoration: "none",
-          display: "inline-block",
-        }}
+        className="inline-block bg-primary text-primary-foreground font-semibold text-sm px-7 py-2.5 rounded-lg hover:bg-primary/90 transition-colors no-underline"
       >
         Get Early Access
       </a>

@@ -1,14 +1,14 @@
 export default function CheckItem({ check }) {
   const { name, score, max_score, passed, partial, finding, fix } = check;
 
-  const colorClass = passed ? "text-green-500" : partial ? "text-orange-500" : "text-red-500";
-  const bgClass = passed ? "bg-green-500/10" : partial ? "bg-orange-500/10" : "bg-red-500/10";
+  const colorClass = passed ? "text-green-600" : partial ? "text-orange-600" : "text-red-600";
+  const bgClass = passed ? "bg-green-50" : partial ? "bg-orange-50" : "bg-red-50";
   const label = passed ? "PASS" : partial ? "PART" : "FAIL";
 
   return (
-    <div className="border border-border rounded-lg p-4 sm:p-5 mb-3 bg-card">
+    <div className="border border-slate-200 rounded-xl p-4 sm:p-5 mb-3 bg-white">
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h3 className="font-semibold text-sm sm:text-base text-foreground">{name}</h3>
+        <h3 className="font-semibold text-sm sm:text-base text-slate-900">{name}</h3>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${bgClass} ${colorClass}`}>
             {label}
@@ -18,9 +18,9 @@ export default function CheckItem({ check }) {
           </span>
         </div>
       </div>
-      <p className="text-xs sm:text-sm text-muted-foreground mb-2 leading-relaxed">{finding}</p>
+      <p className="text-xs sm:text-sm text-slate-600 mb-2 leading-relaxed">{finding}</p>
       {!passed && fix && (
-        <div className="text-xs sm:text-sm text-accent bg-accent/10 rounded-lg px-3 py-2 leading-relaxed">
+        <div className="text-xs sm:text-sm text-brand bg-brand-50 rounded-lg px-3 py-2 leading-relaxed">
           <span className="font-semibold">Fix:</span> {fix}
         </div>
       )}

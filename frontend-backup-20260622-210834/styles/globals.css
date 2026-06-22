@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #1B2A4A;
+  --color-navy-50: #e8ecf0;
+  --color-navy-100: #d1d8e1;
+  --color-navy-200: #a3b1c3;
+  --color-navy-300: #758ba5;
+  --color-navy-400: #476487;
+  --color-navy-500: #1B2A4A;
+  --color-navy-600: #16223b;
+  --color-navy-700: #10192c;
+  --color-navy-800: #0b111e;
+  --color-navy-900: #05080f;
+
+  --color-slate-50: #F8FAFC;
+  --color-slate-100: #F1F5F9;
+  --color-slate-200: #E2E8F0;
+  --color-slate-300: #CBD5E1;
+  --color-slate-400: #94A3B8;
+  --color-slate-500: #64748B;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1E293B;
+  --color-slate-900: #0F172A;
+
+  --color-brand: #2563EB;
+  --color-brand-50: #EFF6FF;
+  --color-brand-100: #DBEAFE;
+  --color-brand-200: #BFDBFE;
+  --color-brand-300: #93C5FD;
+  --color-brand-400: #60A5FA;
+  --color-brand-500: #2563EB;
+  --color-brand-600: #1D4ED8;
+  --color-brand-700: #1E40AF;
+  --color-brand-800: #1E3A8A;
+  --color-brand-900: #172554;
+
+  --color-green-50: #DCFCE7;
+  --color-green-600: #16A34A;
+  --color-orange-50: #FFEDD5;
+  --color-orange-600: #EA580C;
+  --color-red-50: #FEE2E2;
+  --color-red-600: #DC2626;
+
+  /* Shadcn-compatible tokens mapped to our theme */
+  --color-background: #F8FAFC;
+  --color-foreground: #0F172A;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #0F172A;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #0F172A;
+  --color-primary: #2563EB;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F1F5F9;
+  --color-secondary-foreground: #1E293B;
+  --color-muted: #F1F5F9;
+  --color-muted-foreground: #64748B;
+  --color-accent: #EFF6FF;
+  --color-accent-foreground: #1D4ED8;
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #E2E8F0;
+  --color-input: #E2E8F0;
+  --color-ring: #2563EB;
+  --radius: 0.625rem;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
+}
+
+/* Prevent iOS zoom on input focus */
+@media (max-width: 480px) {
+  input, button {
+    font-size: 16px !important;
+  }
+}

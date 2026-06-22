@@ -57,7 +57,6 @@ function ErrorState({ message }) {
 export default function Result() {
   const router = useRouter();
   const [state] = useState(getInitialState);
-  const [copied, setCopied] = useState(false);
 
   // Only side effects (redirect, tracking) — no setState calls
   useEffect(() => {
@@ -81,19 +80,11 @@ export default function Result() {
 
   const { result } = state.data;
 
-  function handleShare() {
-    const text = `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness scanner. Is your site visible to ChatGPT and Claude? Check free at visum.io`;
-    navigator.clipboard.writeText(text).catch(() => {});
-    track("share_clicked", { score: result.total_score });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <div className="border-b border-border">
-        <nav className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16" aria-label="Results navigation">
+      <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
+        {/* Nav */}
+        <nav className="flex items-center justify-between mb-6" aria-label="Results navigation">
           <Link href="/" className="text-lg sm:text-xl font-extrabold text-foreground no-underline">
             Visum
           </Link>
@@ -104,14 +95,12 @@ export default function Result() {
             Scan another site
           </Link>
         </nav>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {/* 1. Score Hero */}
+        {/* Score hero — circular score display */}
         <ScoreHero score={result.total_score} url={result.url} />
 
-        {/* 2. Score Card */}
-        <div className="mt-8">
+        {/* Score card — detailed band message */}
+        <div className="mt-6">
           <ScoreCard
             score={result.total_score}
             band={result.band}
@@ -119,20 +108,31 @@ export default function Result() {
           />
         </div>
 
-        {/* 3. Score Breakdown */}
-        <h2 className="text-lg sm:text-xl font-bold text-foreground mb-5">
+        {/* Upgrade CTA for low scores */}
+        {result.total_score < 85 && (
+          <div className="mb-6">
+            {result.upgrade_cta ? (
+              <LegacyUpgradePrompt cta={result.upgrade_cta} />
+            ) : (
+              <UpgradeCta />
+            )}
+          </div>
+        )}
+
+        {/* Score Breakdown */}
+        <h2 className="text-base sm:text-lg font-bold text-foreground mb-4">
           Score Breakdown
         </h2>
 
-        {/* 4. Check Cards */}
-        <div className="flex flex-col gap-4">
+        {/* Detailed check cards for every check */}
+        <div className="flex flex-col gap-3">
           {result.checks.map((check, i) => (
             <CheckCard key={`card-${i}`} check={check} />
           ))}
         </div>
 
-        {/* 5. Compact view */}
-        <details className="mt-8 group">
+        {/* Compact summary list */}
+        <details className="mt-6 group">
           <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
             <svg
               className="size-4 transition-transform group-open:rotate-90"
@@ -148,42 +148,31 @@ export default function Result() {
             </svg>
             Compact view ({result.checks.length} checks)
           </summary>
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="mt-3 flex flex-col gap-3">
             {result.checks.map((check, i) => (
               <CheckItem key={`item-${i}`} check={check} />
             ))}
           </div>
         </details>
 
-        {/* 6. Upgrade CTA (moved below all report content) */}
-        {result.total_score < 85 && (
-          <div className="mt-10">
-            {result.upgrade_cta ? (
-              <LegacyUpgradePrompt cta={result.upgrade_cta} />
-            ) : (
-              <UpgradeCta />
-            )}
-          </div>
-        )}
-
         {/* Scan time */}
-        <p className="text-center text-xs text-muted-foreground/60 mt-10 mb-6">
+        <p className="text-center text-xs text-muted-foreground/60 mt-6 mb-4">
           Scanned in {(result.scan_time_ms / 1000).toFixed(1)}s
         </p>
 
-        {/* 7. Share */}
-        <div className="text-center pb-10">
+        {/* Share */}
+        <div className="text-center pb-8">
           <button
-            onClick={handleShare}
+            onClick={() => {
+              const text = `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness scanner. Is your site visible to ChatGPT and Claude? Check free at visum.io`;
+              navigator.clipboard.writeText(text).catch(() => {});
+              track("share_clicked", { score: result.total_score });
+              alert("Copied to clipboard!");
+            }}
             className="bg-primary text-primary-foreground font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
           >
             Share my score
           </button>
-          {copied && (
-            <p className="mt-3 text-sm text-green-500 animate-pulse">
-              Copied to clipboard!
-            </p>
-          )}
         </div>
       </div>
     </div>
