@@ -37,29 +37,19 @@ load_dotenv(BASE_DIR / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# ── Detect placeholder DATABASE_URL values ──────────────────────────
-# Render environment may have a placeholder with literal strings like
-# 'port', 'hostname', 'password' if copied from .env.example.
-_PLACEHOLDER_PATTERNS = ["user:password@", ":port/", "5432:port", "hostname"]
-
+# Wrap engine creation in try/except to prevent crash on invalid URL
 engine = None
 if DATABASE_URL:
-    # Reject placeholder URLs that would crash SQLAlchemy
-    url_lower = DATABASE_URL.lower()
-    is_placeholder = any(p in url_lower for p in _PLACEHOLDER_PATTERNS)
-    if is_placeholder:
-        logger.warning(f"DATABASE_URL appears to be a placeholder (contains 'port', 'password', or 'hostname'). Running without database.")
-    else:
-        try:
-            engine = create_engine(
-                DATABASE_URL,
-                pool_pre_ping=True,
-                pool_recycle=300,
-            )
-            logger.info("Database engine created successfully")
-        except Exception as e:
-            logger.warning(f"Database engine creation failed: {e}. Running without database.")
-            engine = None
+    try:
+        engine = create_engine(
+            DATABASE_URL,
+            pool_pre_ping=True,
+            pool_recycle=300,
+        )
+        logger.info("Database engine created successfully")
+    except Exception as e:
+        logger.warning(f"Database engine creation failed: {e}. Running without database.")
+        engine = None
 else:
     logger.info("DATABASE_URL not set. Running without database.")
 
