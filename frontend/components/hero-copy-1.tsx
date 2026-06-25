@@ -1,27 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { scanUrl } from "../lib/api";
 import { track } from "../lib/posthog";
 import { Container } from "./container";
 
-const progressMessages = [
-  "Crawling site...",
-  "Checking AI bot permissions...",
-  "Analysing structured data...",
-  "Testing MCP endpoint...",
-  "Measuring page speed...",
-  "Scoring 8 checks...",
-];
-
 function HeroPreviewCard() {
   const checks = [
-    { name: "AI Bot Permissions (robots.txt)", pass: true },
-    { name: "JSON-LD Structured Data", pass: true },
-    { name: "llms.txt File", pass: null },
-    { name: "MCP Endpoint", pass: null },
-    { name: "JavaScript Rendering", pass: null },
-    { name: "Meta Tags & Open Graph", pass: false },
-    { name: "Sitemap.xml", pass: false },
-    { name: "Page Load Speed", pass: false },
+    { name: "Structured data", pass: true },
+    { name: "Crawlability", pass: true },
+    { name: "Agent access policy", pass: true },
+    { name: "Content clarity", pass: null },
+    { name: "Metadata quality", pass: null },
+    { name: "Performance signals", pass: null },
+    { name: "Action readiness", pass: false },
+    { name: "Trust & freshness", pass: false },
   ];
 
   return (
@@ -34,7 +25,7 @@ function HeroPreviewCard() {
         <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
           <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
             <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted opacity-20" />
-            <circle cx="20" cy="20" r="17" fill="none" stroke="url(#hp-grad)" strokeWidth="2" strokeDasharray="48.1 58.7" />
+            <circle cx="20" cy="20" r="17" fill="none" stroke="url(#hp-grad)" strokeWidth="2" strokeDasharray="74.6 53.4" />
             <defs>
               <linearGradient id="hp-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#7c3aed" />
@@ -42,7 +33,7 @@ function HeroPreviewCard() {
               </linearGradient>
             </defs>
           </svg>
-          <span className="absolute text-[10px] font-bold text-foreground">45</span>
+          <span className="absolute text-[10px] font-bold text-foreground">58</span>
         </div>
         <div className="text-left min-w-0">
           <p className="text-xs font-medium text-foreground truncate">Fair — Many Gaps</p>
@@ -75,24 +66,6 @@ export function Hero({ onScanStart, onScanEnd }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [progressIndex, setProgressIndex] = useState(0);
-
-  // Rotate progress messages every 3.5 seconds while loading
-  useEffect(() => {
-    const id = setTimeout(() => {
-      if (!loading) {
-        setProgressIndex(0);
-        return;
-      }
-
-      const interval = setInterval(() => {
-        setProgressIndex((prev) => (prev + 1) % progressMessages.length);
-      }, 3500);
-
-      return () => clearInterval(interval);
-    }, 0);
-    return () => clearTimeout(id);
-  }, [loading]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -194,12 +167,6 @@ export function Hero({ onScanStart, onScanEnd }) {
                 )}
               </button>
             </form>
-
-            {loading && (
-              <p className="text-sm text-muted-foreground text-center">
-                {progressMessages[progressIndex]}
-              </p>
-            )}
 
             {error && (
               <p id="scan-error" className="text-sm font-medium text-destructive" role="alert">{error}</p>

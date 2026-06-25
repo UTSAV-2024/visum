@@ -1,7 +1,7 @@
 import { cn } from "../lib/utils";
 import { getBand } from "../lib/scan-data";
 
-export function ScoreHero({ score, url, scanTimeMs }) {
+export function ScoreHero({ score, url }) {
   const band = getBand(score);
   const gradientId = `score-grad-${score}`;
 
@@ -62,12 +62,6 @@ export function ScoreHero({ score, url, scanTimeMs }) {
       >
         {band.label}
       </span>
-
-      {scanTimeMs != null && (
-        <p className="text-xs text-muted-foreground/60">
-          Scanned in {(scanTimeMs / 1000).toFixed(1)}s
-        </p>
-      )}
     </section>
   );
 }

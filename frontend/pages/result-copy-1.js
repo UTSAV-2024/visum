@@ -137,7 +137,7 @@ export default function Result() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         {/* 1. Score Hero */}
-        <ScoreHero score={result.total_score} url={result.url} scanTimeMs={result.scan_time_ms} />
+        <ScoreHero score={result.total_score} url={result.url} />
 
         {/* 2. Score Card */}
         <div className="mt-8">
@@ -195,30 +195,19 @@ export default function Result() {
           </div>
         )}
 
+        {/* Scan time */}
+        <p className="text-center text-xs text-muted-foreground/60 mt-10 mb-6">
+          Scanned in {(result.scan_time_ms / 1000).toFixed(1)}s
+        </p>
+
         {/* 7. Share */}
         <div className="text-center pb-10">
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={handleShare}
-              className="bg-primary text-primary-foreground font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              Share my score
-            </button>
-            <a
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness Scanner. Is your site visible to ChatGPT and Claude?`
-              )}&url=${encodeURIComponent("https://visum-eight.vercel.app")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track("tweet_clicked", { score: result.total_score })}
-              className="inline-flex items-center gap-2 bg-[#1DA1F2] text-white font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-lg hover:bg-[#1a8cd8] transition-colors no-underline"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              Share on X
-            </a>
-          </div>
+          <button
+            onClick={handleShare}
+            className="bg-primary text-primary-foreground font-semibold text-xs sm:text-sm px-6 py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
+          >
+            Share my score
+          </button>
           {copied && (
             <p className="mt-3 text-sm text-green-500 animate-pulse">
               Copied to clipboard!
