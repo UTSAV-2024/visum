@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Dict
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse
 from .schemas import (
     ScanRequest,
     ScanResponse,
@@ -165,12 +165,6 @@ async def ping():
     """Lightweight health check for UptimeRobot, Render monitoring, and deployment verification.
     No authentication, no database access, no external calls — near-instant response."""
     return {"pong": True}
-
-
-@app.head("/ping", include_in_schema=False)
-async def ping_head():
-    """HEAD variant for UptimeRobot free plan compatibility. Returns 200 with no body."""
-    return Response(status_code=200)
 
 
 @app.get("/health")

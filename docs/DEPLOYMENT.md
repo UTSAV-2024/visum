@@ -34,15 +34,19 @@ $ curl https://visum-backend.onrender.com/ping
 
 ### Purpose
 
-- **UptimeRobot monitoring** — Configure UptimeRobot to ping this endpoint every 5 minutes
+- **UptimeRobot monitoring** — Configure UptimeRobot to ping `GET /ping` every 5 minutes
+  - UptimeRobot free plan uses `HEAD` requests — this is now supported (returns HTTP 200 with no body)
 - **Render health monitoring** — Use as the Render health check path
 - **Deployment verification** — Quick smoke test after deployment
 - **Cold-start prevention** — Regular pings keep the service warm and reduce cold-start latency
 
-### Response
+### Responses
 
-- HTTP 200 — Service is healthy
-- Body: `{"pong": true}`
+| Method | Status | Body |
+|--------|--------|------|
+| `GET` | 200 | `{"pong": true}` |
+| `HEAD` | 200 | Empty (no body) |
+
 - No authentication required
 - No database access
 - No external service calls

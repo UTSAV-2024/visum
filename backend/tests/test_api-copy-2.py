@@ -21,13 +21,6 @@ def test_ping():
     assert data == {"pong": True}
 
 
-def test_ping_head():
-    """HEAD /ping returns 200 with no body (UptimeRobot compatibility)."""
-    response = client.head("/ping")
-    assert response.status_code == 200
-    assert response.content == b""
-
-
 def test_health():
     """GET /health returns 200."""
     response = client.get("/health")
