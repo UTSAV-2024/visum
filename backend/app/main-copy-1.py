@@ -160,13 +160,6 @@ def _validate_url(url: str) -> str:
 
 # ── Endpoints ────────────────────────────────────────────────────────
 
-@app.get("/ping")
-async def ping():
-    """Lightweight health check for UptimeRobot, Render monitoring, and deployment verification.
-    No authentication, no database access, no external calls — near-instant response."""
-    return {"pong": True}
-
-
 @app.get("/health")
 async def health():
     return {
