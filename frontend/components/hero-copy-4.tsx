@@ -197,7 +197,7 @@ export function Hero({ onScanStart, onScanEnd }) {
               <button
                 type="submit"
                 disabled={loading || !url.trim()}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex-1 sm:flex-none cursor-pointer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex-1 sm:flex-none"
               >
                 {loading ? (
                   <>

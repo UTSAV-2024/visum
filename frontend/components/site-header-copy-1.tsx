@@ -34,24 +34,12 @@ export function SiteHeader() {
 
           {/* CTA — right */}
           <div className="flex items-center shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                const input = document.getElementById("scan-url");
-                if (input) {
-                  input.scrollIntoView({ behavior: "smooth", block: "center" });
-                  // Focus on the next frame after scroll starts
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      input.focus({ preventScroll: true });
-                    });
-                  });
-                }
-              }}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 cursor-pointer border-0"
+            <a
+              href="#scan"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Run a scan
-            </button>
+            </a>
           </div>
         </div>
       </Container>
