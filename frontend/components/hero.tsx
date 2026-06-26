@@ -110,7 +110,10 @@ export function Hero({ onScanStart, onScanEnd }) {
   async function handleSubmit(e) {
     e.preventDefault();
     const trimmed = url.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setError("Please enter a website URL");
+      return;
+    }
 
     let parsed;
     try {
@@ -178,7 +181,7 @@ export function Hero({ onScanStart, onScanEnd }) {
               seconds and shows exactly how machines see, read, and act on it.
             </p>
 
-            <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3 sm:flex-row">
+            <form onSubmit={handleSubmit} noValidate className="flex w-full flex-col gap-3 sm:flex-row">
               <label htmlFor="scan-url" className="sr-only">Website URL</label>
               <div className="relative flex-[2]">
                 <input
@@ -196,7 +199,7 @@ export function Hero({ onScanStart, onScanEnd }) {
               </div>
               <button
                 type="submit"
-                disabled={loading || !url.trim()}
+                disabled={loading}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex-1 sm:flex-none cursor-pointer"
               >
                 {loading ? (

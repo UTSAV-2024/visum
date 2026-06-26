@@ -40,10 +40,14 @@ export function SiteHeader() {
                 const input = document.getElementById("scan-url");
                 if (input) {
                   input.scrollIntoView({ behavior: "smooth", block: "center" });
-                  // Focus on the next frame after scroll starts
                   requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                       input.focus({ preventScroll: true });
+                      // Trigger form validation so empty URL shows an error
+                      const form = input.closest("form");
+                      if (form) {
+                        form.requestSubmit();
+                      }
                     });
                   });
                 }
