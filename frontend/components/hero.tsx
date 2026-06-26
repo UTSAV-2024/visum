@@ -152,8 +152,8 @@ export function Hero({ onScanStart, onScanEnd }) {
 
   return (
     <section id="scan" className="relative bg-gradient-to-b from-background to-secondary/5 py-24">
-      {/* Grid background */}
-      <div className="absolute inset-0 opacity-[0.02]">
+      {/* Grid background — pointer-events-none so it doesn't intercept clicks on the form/button */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
         <div className="h-full w-full" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
           backgroundSize: '40px 40px'
