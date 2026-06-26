@@ -126,27 +126,21 @@ export function Hero({ onScanStart, onScanEnd }) {
 
     if (onScanStart) onScanStart();
 
-    let data;
     try {
-      data = await scanUrl(parsed.href);
+      const data = await scanUrl(parsed.href);
       track("scan_completed", {
         url: parsed.href,
         score: data.result.total_score,
         band: data.result.band,
       });
-      // Store scan data under a pending key — only moved to visum_result after email submission
-      sessionStorage.setItem("visum_pending_result", JSON.stringify(data));
+      sessionStorage.setItem("visum_result", JSON.stringify(data));
+      if (onScanEnd) onScanEnd(data);
     } catch (err) {
       const message = err.message || "Scan failed. Please try again.";
       setError(message);
       track("scan_error", { url: parsed.href, error: message });
     } finally {
       setLoading(false);
-    }
-
-    // Navigate to email gate outside try/catch — a navigation error must not mask a successful scan
-    if (data && onScanEnd) {
-      onScanEnd(data);
     }
   }
 

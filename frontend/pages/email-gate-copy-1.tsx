@@ -6,7 +6,7 @@ import { track } from "../lib/posthog";
 
 function getScanData() {
   try {
-    const stored = sessionStorage.getItem("visum_pending_result");
+    const stored = sessionStorage.getItem("visum_result");
     if (!stored) return null;
     const parsed = JSON.parse(stored);
     if (!parsed.result || typeof parsed.result.total_score !== "number") return null;
@@ -90,11 +90,7 @@ export default function EmailGate() {
         score: result.total_score,
       });
 
-      // Store scan data under visum_result so the result page can find it
-      sessionStorage.setItem("visum_result", JSON.stringify(scanData));
       sessionStorage.setItem("visum_email", "true");
-      // Clear the pending data
-      sessionStorage.removeItem("visum_pending_result");
       setSaved(true);
 
       track("report_unlocked", {
@@ -132,6 +128,16 @@ export default function EmailGate() {
       {/* Email gate content */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
+          {/* Score preview pill */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-1.5 text-sm text-accent">
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+              Scan complete — Score: {result.total_score}/100
+            </div>
+          </div>
+
           <div className="text-center mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance text-foreground">
               Your AI Visibility Report is Ready
