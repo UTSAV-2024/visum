@@ -31,8 +31,8 @@ export function SiteFooter() {
           <div>
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Company</h4>
             <ul className="space-y-3 text-sm">
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">About</span></li>
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Blog</span></li>
+              <li><span className="text-muted-foreground">About</span></li>
+              <li><span className="text-muted-foreground">Blog</span></li>
               <li><a href="mailto:utsav@visum.io" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
             </ul>
           </div>
@@ -40,9 +40,9 @@ export function SiteFooter() {
           <div>
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Legal</h4>
             <ul className="space-y-3 text-sm">
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Privacy</span></li>
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Terms</span></li>
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Cookie Policy</span></li>
+              <li><span className="text-muted-foreground">Privacy</span></li>
+              <li><span className="text-muted-foreground">Terms</span></li>
+              <li><span className="text-muted-foreground">Cookie Policy</span></li>
             </ul>
           </div>
         </div>
@@ -52,9 +52,9 @@ export function SiteFooter() {
             &copy; {year} Visum. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">Twitter</span>
-            <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">GitHub</span>
-            <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">LinkedIn</span>
+            <span className="text-sm text-muted-foreground">Twitter</span>
+            <span className="text-sm text-muted-foreground">GitHub</span>
+            <span className="text-sm text-muted-foreground">LinkedIn</span>
           </div>
         </div>
       </Container>

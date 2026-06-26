@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { scanUrl } from "../lib/api";
 import { track } from "../lib/posthog";
 import { Container } from "./container";
@@ -76,36 +76,23 @@ export function Hero({ onScanStart, onScanEnd }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [progressIndex, setProgressIndex] = useState(0);
-  const intervalRef = useRef(null);
 
   // Rotate progress messages every 3.5 seconds while loading
   useEffect(() => {
-    // Clear any existing interval when loading state changes
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
     const id = setTimeout(() => {
       if (!loading) {
         setProgressIndex(0);
         return;
       }
-      intervalRef.current = setInterval(() => {
+
+      const interval = setInterval(() => {
         setProgressIndex((prev) => (prev + 1) % progressMessages.length);
       }, 3500);
+
+      return () => clearInterval(interval);
     }, 0);
     return () => clearTimeout(id);
   }, [loading]);
-
-  // Clean up interval on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -181,6 +168,7 @@ export function Hero({ onScanStart, onScanEnd }) {
                   inputMode="url"
                   value={url}
                   onChange={(e) => { setUrl(e.target.value); if (error) setError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(e); }}
                   placeholder="yourwebsite.com"
                   disabled={loading}
                   className="h-12 w-full rounded-xl border border-border bg-secondary/50 px-4 text-base text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
