@@ -4,27 +4,12 @@ import { track } from "../lib/posthog";
 import { Container } from "./container";
 
 const progressMessages = [
-  { message: "Crawling site...", pct: 15 },
-  { message: "Checking AI bot permissions...", pct: 30 },
-  { message: "Analysing structured data...", pct: 45 },
-  { message: "Testing MCP endpoint...", pct: 60 },
-  { message: "Measuring page speed...", pct: 75 },
-  { message: "Scoring 8 checks...", pct: 90 },
-];
-
-const aiFacts = [
-  "Most websites do not expose llms.txt.",
-  "AI agents cannot reliably read JavaScript-only content.",
-  "Structured data helps AI understand your website.",
-  "A well-formed sitemap.xml is essential for AI crawlers.",
-  "Robots.txt directives directly control AI bot access.",
-  "Semantic HTML improves machine readability.",
-];
-
-const exampleUrls = [
-  "anthropic.com",
-  "shopify.com",
-  "woocommerce.com",
+  "Crawling site...",
+  "Checking AI bot permissions...",
+  "Analysing structured data...",
+  "Testing MCP endpoint...",
+  "Measuring page speed...",
+  "Scoring 8 checks...",
 ];
 
 function HeroPreviewCard() {
@@ -91,9 +76,7 @@ export function Hero({ onScanStart, onScanEnd }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [progressIndex, setProgressIndex] = useState(0);
-  const [factIndex, setFactIndex] = useState(0);
   const intervalRef = useRef(null);
-  const factIntervalRef = useRef(null);
 
   // Rotate progress messages every 3.5 seconds while loading
   useEffect(() => {
@@ -102,23 +85,15 @@ export function Hero({ onScanStart, onScanEnd }) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (factIntervalRef.current) {
-      clearInterval(factIntervalRef.current);
-      factIntervalRef.current = null;
-    }
 
     const id = setTimeout(() => {
       if (!loading) {
         setProgressIndex(0);
-        setFactIndex(0);
         return;
       }
       intervalRef.current = setInterval(() => {
         setProgressIndex((prev) => (prev + 1) % progressMessages.length);
       }, 3500);
-      factIntervalRef.current = setInterval(() => {
-        setFactIndex((prev) => (prev + 1) % aiFacts.length);
-      }, 5000);
     }, 0);
     return () => clearTimeout(id);
   }, [loading]);
@@ -129,16 +104,8 @@ export function Hero({ onScanStart, onScanEnd }) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (factIntervalRef.current) {
-        clearInterval(factIntervalRef.current);
-      }
     };
   }, []);
-
-  function handleExampleClick(example) {
-    setUrl(example);
-    if (error) setError("");
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -249,75 +216,19 @@ export function Hero({ onScanStart, onScanEnd }) {
               </button>
             </form>
 
-            {/* Example URLs */}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground">
-              <span className="font-medium">Try:</span>
-              {exampleUrls.map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() => handleExampleClick(example)}
-                  disabled={loading}
-                  aria-label={`Try scanning ${example}`}
-                  className="cursor-pointer border-0 bg-transparent px-0 py-0 text-xs text-accent underline underline-offset-2 decoration-accent/40 hover:decoration-accent transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-
             {loading && (
-              <div className="flex flex-col gap-3">
-                {/* Progress bar */}
-                <div className="w-full">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">{progressMessages[progressIndex].message}</span>
-                    <span className="text-xs font-mono text-muted-foreground">{progressMessages[progressIndex].pct}%</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-accent to-brand-400 transition-all duration-700 ease-out"
-                      style={{ width: `${progressMessages[progressIndex].pct}%` }}
-                      role="progressbar"
-                      aria-valuenow={progressMessages[progressIndex].pct}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label="Scan progress"
-                    />
-                  </div>
-                </div>
-                {/* AI fact */}
-                <p className="text-xs text-muted-foreground/60 italic text-center">
-                  Did you know? {aiFacts[factIndex]}
-                </p>
-              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                {progressMessages[progressIndex]}
+              </p>
             )}
 
             {error && (
               <p id="scan-error" className="text-sm font-medium text-destructive" role="alert">{error}</p>
             )}
 
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {[
-                { text: "Free scan", icon: "check" },
-                { text: "No signup required to start", icon: "check" },
-                { text: "Results in ~20 seconds", icon: "clock" },
-              ].map((item) => (
-                <div key={item.text} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-                  {item.icon === "check" ? (
-                    <svg className="h-3.5 w-3.5 shrink-0 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span>{item.text}</span>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Free instant report &middot; No signup required &middot; 8 readiness checks
+            </p>
           </div>
 
           {/* Right column: preview card — 40% */}

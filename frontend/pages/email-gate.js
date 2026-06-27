@@ -117,6 +117,16 @@ export default function EmailGate() {
     }
   }
 
+  // Determine score band styling for teaser
+  function getScoreStyles(score) {
+    if (score >= 85) return { color: "text-green-500", bg: "bg-green-500/10", ring: "ring-green-500/30", label: "Excellent" };
+    if (score >= 65) return { color: "text-accent", bg: "bg-accent/10", ring: "ring-accent/30", label: "Good" };
+    if (score >= 40) return { color: "text-orange-500", bg: "bg-orange-500/10", ring: "ring-orange-500/30", label: "Fair" };
+    return { color: "text-red-500", bg: "bg-red-500/10", ring: "ring-red-500/30", label: "Poor" };
+  }
+
+  const scoreStyles = getScoreStyles(result.total_score);
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Minimal nav */}
@@ -129,97 +139,165 @@ export default function EmailGate() {
         </nav>
       </div>
 
-      {/* Email gate content */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance text-foreground">
-              Your AI Visibility Report is Ready
-            </h1>
-            <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-              Enter your email to unlock your report and receive a copy.
-            </p>
-          </div>
-
-          {/* Benefits list */}
-          <div className="mb-8 space-y-3">
-            {[
-              "AI Visibility Score",
-              "Failed Checks",
-              "Actionable Recommendations",
-            ].map((benefit) => (
-              <div key={benefit} className="flex items-center gap-3 text-sm text-muted-foreground">
-                <svg className="h-5 w-5 shrink-0 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                </svg>
-                <span>{benefit}</span>
-              </div>
-            ))}
-          </div>
-
           {saved ? (
-            /* Success state */
-            <div className="text-center py-8">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10 mb-4">
-                <svg className="h-8 w-8 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                </svg>
+            /* Success state — reveal report content on email gate */
+            <div className="transition-all duration-500">
+              <div className="text-center mb-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10 mb-4">
+                  <svg className="h-8 w-8 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Report Unlocked!</h2>
               </div>
-              <p className="text-lg font-semibold text-foreground">Your report is unlocked!</p>
-              <p className="mt-1 text-sm text-muted-foreground">Redirecting you now...</p>
+
+              {/* Revealed score */}
+              <div className={`${scoreStyles.bg} rounded-xl p-5 mb-4 ring-1 ${scoreStyles.ring} border border-border text-center`}>
+                <div className={`text-5xl font-extrabold ${scoreStyles.color}`}>
+                  {result.total_score}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">out of 100</div>
+                <div className={`text-base font-semibold mt-1 ${scoreStyles.color}`}>
+                  {result.band || scoreStyles.label}
+                </div>
+              </div>
+
+              {/* Revealed check summary */}
+              <div className="rounded-xl border border-border bg-card p-4 mb-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Check Results</h3>
+                <div className="flex flex-col gap-2">
+                  {result.checks.slice(0, 4).map((check, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground truncate mr-2">{check.name}</span>
+                      <span className={
+                        check.passed
+                          ? "text-green-500 font-semibold shrink-0"
+                          : check.partial
+                          ? "text-orange-500 font-semibold shrink-0"
+                          : "text-red-500 font-semibold shrink-0"
+                      }>
+                        {check.passed ? "PASS" : check.partial ? "PART" : "FAIL"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {result.checks.length > 4 && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">+{result.checks.length - 4} more checks</p>
+                )}
+              </div>
+
+              <div className="text-center">
+                <Link
+                  href="/result"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 no-underline"
+                >
+                  View Full Report
+                  <svg className="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
+                  </svg>
+                </Link>
+                <p className="mt-3 text-xs text-muted-foreground">Redirecting to full report in a moment...</p>
+              </div>
             </div>
           ) : (
-            /* Email form */
-            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-              <div>
-                <label htmlFor="email" className="sr-only">Email address</label>
-                <input
-                  id="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (error) setError("");
-                  }}
-                  placeholder="you@example.com"
-                  disabled={saving}
-                  className="h-12 w-full rounded-xl border border-border bg-secondary/50 px-4 text-base text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-describedby={error ? "email-error" : undefined}
-                  aria-invalid={!!error}
-                  autoFocus
-                />
-                {error && (
-                  <p id="email-error" className="mt-1.5 text-sm font-medium text-destructive" role="alert">
-                    {error}
-                  </p>
-                )}
+            <>
+              {/* Scan complete state with score teaser */}
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-3 py-1 text-xs text-green-500 mb-4">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                  </svg>
+                  Scan Complete
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-balance text-foreground">
+                  Your AI Readiness Report is Ready
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  Unlock the full report to see detailed findings and recommendations.
+                </p>
               </div>
 
-              <button
-                type="submit"
-                disabled={saving || !email.trim()}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Unlocking...
-                  </>
-                ) : (
-                  "View My Report"
-                )}
-              </button>
-            </form>
-          )}
+              {/* Score teaser — visible but simple */}
+              <div className={`${scoreStyles.bg} rounded-xl p-5 mb-6 ring-1 ${scoreStyles.ring} border border-border text-center`}>
+                <div className={`text-4xl font-extrabold ${scoreStyles.color}`}>
+                  {result.total_score}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">out of 100</div>
+                <div className={`text-sm font-semibold mt-1 ${scoreStyles.color}`}>
+                  {result.band || scoreStyles.label}
+                </div>
+              </div>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Your email will never be shared. We&rsquo;ll send you a copy of your report.
-          </p>
+              {/* Blurred preview — shows results are detailed but gated */}
+              <div className="relative mb-6 overflow-hidden rounded-xl border border-border bg-card">
+                <div className="p-5 space-y-3 blur-sm select-none">
+                  <div className="h-4 w-2/3 rounded bg-muted/30" />
+                  <div className="h-3 w-full rounded bg-muted/20" />
+                  <div className="h-3 w-5/6 rounded bg-muted/20" />
+                  <div className="h-3 w-4/6 rounded bg-muted/20" />
+                  <div className="mt-3 flex gap-2">
+                    <div className="h-8 w-20 rounded-lg bg-muted/30" />
+                    <div className="h-8 w-20 rounded-lg bg-muted/30" />
+                  </div>
+                </div>
+                {/* Blur overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/5 to-background/40" />
+              </div>
+
+              {/* Email form */}
+              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+                <div>
+                  <label htmlFor="email" className="sr-only">Email address</label>
+                  <input
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError("");
+                    }}
+                    placeholder="you@example.com"
+                    disabled={saving}
+                    className="h-12 w-full rounded-xl border border-border bg-secondary/50 px-4 text-base text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-describedby={error ? "email-error" : undefined}
+                    aria-invalid={!!error}
+                    autoFocus
+                  />
+                  {error && (
+                    <p id="email-error" className="mt-1.5 text-sm font-medium text-destructive" role="alert">
+                      {error}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={saving || !email.trim()}
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Unlocking...
+                    </>
+                  ) : (
+                    "Unlock My Full Report"
+                  )}
+                </button>
+              </form>
+
+              <p className="mt-6 text-center text-xs text-muted-foreground">
+                Your email will never be shared. We&rsquo;ll send you a copy of your report.
+              </p>
+            </>
+          )}
         </div>
       </main>
     </div>

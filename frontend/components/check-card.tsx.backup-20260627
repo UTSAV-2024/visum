@@ -23,17 +23,10 @@ export function CheckCard({ check }) {
   const config = statusConfig[status];
   const pct = Math.round((check.score / check.max_score) * 100);
 
-  // Derive priority from check status
-  const priority = !check.passed && !check.partial
-    ? { label: "High Impact", className: "bg-red-500/10 text-red-500" }
-    : check.partial
-    ? { label: "Medium Impact", className: "bg-orange-500/10 text-orange-500" }
-    : { label: "Low Impact", className: "bg-green-500/10 text-green-500" };
-
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 transition-colors hover:border-accent/50">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5">
           {/* Status icon */}
           <span
             className={cn(
@@ -70,27 +63,12 @@ export function CheckCard({ check }) {
               </svg>
             )}
           </span>
-          <h3 className="font-medium leading-tight text-foreground text-pretty sm:truncate">{check.name}</h3>
+          <h3 className="font-medium leading-tight text-foreground text-pretty">{check.name}</h3>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {!check.passed && (
-            <span className={cn("hidden sm:inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide", priority.className)}>
-              {priority.label}
-            </span>
-          )}
-          <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide", config.className)}>
-            {config.label}
-          </span>
-        </div>
+        <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide", config.className)}>
+          {config.label}
+        </span>
       </div>
-      {/* Priority label for mobile (shown below header) */}
-      {!check.passed && (
-        <div className="sm:hidden">
-          <span className={cn("inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide", priority.className)}>
-            {priority.label}
-          </span>
-        </div>
-      )}
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between">
