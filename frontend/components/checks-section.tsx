@@ -2,36 +2,36 @@ import { Container } from "./container";
 
 const checks = [
   {
-    title: "Structured data",
-    description: "Validates schema.org markup so agents understand your products, pages, and entities.",
+    title: "LLM discoverability",
+    description: "Discover why AI systems cannot find or cite your content in chat responses.",
   },
   {
-    title: "Crawlability",
-    description: "Confirms agents and bots can reach key pages without being blocked or rate-limited.",
+    title: "Barrier detection",
+    description: "Find technical barriers that prevent ChatGPT, Claude, and Perplexity from accessing your pages.",
   },
   {
-    title: "Content clarity",
-    description: "Measures how easily machines can extract your core value proposition and offerings.",
+    title: "Content readability",
+    description: "Check whether AI agents can extract meaning from your pages without JavaScript.",
   },
   {
-    title: "Agent access policy",
-    description: "Reviews robots.txt and llms.txt directives that control AI agent permissions.",
+    title: "Agent permissions",
+    description: "Reveal how your robots.txt and access rules are blocking AI crawlers.",
   },
   {
-    title: "Metadata quality",
-    description: "Checks titles, descriptions, and Open Graph tags used by assistants to summarize you.",
+    title: "AI metadata quality",
+    description: "See if your titles and Open Graph tags help or hurt your AI visibility.",
   },
   {
-    title: "Performance signals",
-    description: "Assesses load speed and rendering that affect whether agents can parse your pages.",
+    title: "Speed impact",
+    description: "Understand how page speed affects whether AI agents wait for your content.",
   },
   {
-    title: "Action readiness",
-    description: "Detects forms, APIs, and flows agents can complete on a user's behalf.",
+    title: "Agent interaction",
+    description: "Discover if AI agents can perform actions on your site or just read it.",
   },
   {
-    title: "Trust & freshness",
-    description: "Evaluates citations, authorship, and update signals that build agent confidence.",
+    title: "Trust signals",
+    description: "Get clear actions to improve citations, authorship, and AI confidence in your site.",
   },
 ];
 
@@ -57,12 +57,12 @@ export function ChecksSection() {
     <section id="checks" className="py-24 bg-secondary/20">
       <Container>
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <p className="text-sm font-semibold uppercase tracking-wide text-accent">8 readiness checks</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-accent">8 visibility checks</p>
           <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            Everything we test for AI visibility
+            Why AI Agents Ignore Your Site
           </h2>
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-            Each scan runs eight focused checks to score how prepared your site is for the agent-driven web.
+            We run eight focused checks to surface exactly what&rsquo;s blocking AI systems from finding, understanding, and citing your content.
           </p>
         </div>
 

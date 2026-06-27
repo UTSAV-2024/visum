@@ -5,6 +5,7 @@ import { StatsStrip } from "../components/stats-strip";
 import { ChecksSection } from "../components/checks-section";
 import { BenchmarkSection } from "../components/benchmark-section";
 import { SocialProof } from "../components/social-proof";
+import { ComparisonSection } from "../components/comparison-section";
 import { UpgradeCta } from "../components/upgrade-cta";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
@@ -60,6 +61,9 @@ export default function Home() {
         </section>
 
         <StatsStrip />
+
+        <ComparisonSection />
+
         <BenchmarkSection />
         <ChecksSection />
         <SocialProof />

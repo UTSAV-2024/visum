@@ -18,6 +18,54 @@ const statusConfig = {
   },
 };
 
+// ── Humanized explanations for failed/partial checks ────────────────
+const HUMAN_EXPLANATIONS = {
+  "AI Bot Permissions (robots.txt)": {
+    fail: "AI crawlers are blocked from accessing your site by your robots.txt configuration.",
+    partial: "Some AI crawlers can access your site, but others are being blocked.",
+  },
+  "JSON-LD Structured Data": {
+    fail: "AI systems cannot reliably understand what your pages are about.",
+    partial: "AI systems can only partially understand what your pages are about.",
+  },
+  "llms.txt File": {
+    fail: "Developer-focused AI tools have less guidance about your content.",
+    partial: "AI coding assistants have incomplete guidance about your project.",
+  },
+  "MCP Endpoint": {
+    fail: "AI agents cannot directly interact with your content.",
+    partial: "AI agents have limited ability to interact with your content.",
+  },
+  "JavaScript Rendering": {
+    fail: "Some AI crawlers may never see your content because it loads too late.",
+    partial: "Some AI crawlers may miss part of your content due to JavaScript loading.",
+  },
+  "Meta Tags and Open Graph": {
+    fail: "AI systems lack the information needed to understand and cite your pages.",
+    partial: "AI systems have incomplete information for understanding your pages.",
+  },
+  "Sitemap.xml": {
+    fail: "AI systems may miss important pages on your site.",
+    partial: "AI systems have limited guidance for prioritising your pages.",
+  },
+  "Page Load Speed": {
+    fail: "AI agents may time out before your page finishes loading.",
+    partial: "Some AI agents may time out before your page finishes loading.",
+  },
+};
+
+// ── "Why This Matters" for failed/partial checks ───────────────────
+const WHY_IT_MATTERS = {
+  "AI Bot Permissions (robots.txt)": "AI-powered search engines and chatbots cannot access or reference your content if blocked.",
+  "JSON-LD Structured Data": "Without structured data, AI systems may struggle to understand and cite your content.",
+  "llms.txt File": "Developer tools and coding assistants like Cursor and Copilot cannot easily reference your project.",
+  "MCP Endpoint": "Future AI agents may be unable to perform actions using your site.",
+  "JavaScript Rendering": "If content appears only after rendering, some AI systems may never process it.",
+  "Meta Tags and Open Graph": "AI summarization tools rely on meta tags to accurately describe your site in search results.",
+  "Sitemap.xml": "AI crawlers without a sitemap may never discover your newest or deepest pages.",
+  "Page Load Speed": "AI agents operate under strict timeouts — slow pages get skipped for faster alternatives.",
+};
+
 export function CheckCard({ check }) {
   const status = check.passed ? "PASS" : check.partial ? "PART" : "FAIL";
   const config = statusConfig[status];
@@ -113,11 +161,25 @@ export function CheckCard({ check }) {
         </div>
       </div>
 
-      {check.finding && (
-        <div className="flex flex-col gap-1 text-sm leading-relaxed">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Finding</span>
-          <p className="text-muted-foreground">{check.finding}</p>
+      {!check.passed && (
+        <div className="flex flex-col gap-1.5">
+          {/* Humanized explanation */}
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {HUMAN_EXPLANATIONS[check.name]?.[check.partial ? "partial" : "fail"] || check.finding}
+          </p>
+
+          {/* Why This Matters */}
+          <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-500">Why this matters</span>
+            <p className="text-sm leading-relaxed text-muted-foreground mt-0.5">
+              {WHY_IT_MATTERS[check.name] || check.finding}
+            </p>
+          </div>
         </div>
+      )}
+
+      {check.passed && check.finding && (
+        <p className="text-sm leading-relaxed text-muted-foreground">{check.finding}</p>
       )}
 
       {!check.passed && check.fix && (

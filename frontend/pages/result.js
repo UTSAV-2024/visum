@@ -7,6 +7,8 @@ import CheckItem from "../components/CheckItem";
 import ScoreCard from "../components/ScoreCard";
 import { UpgradeCta } from "../components/upgrade-cta";
 import LegacyUpgradePrompt  from "../components/UpgradePrompt";
+import { AIVisibilitySummary } from "../components/ai-visibility-summary";
+import { WhatThisMeans } from "../components/what-this-means";
 import { track } from "../lib/posthog";
 
 /**
@@ -389,19 +391,25 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           />
         </div>
 
-        {/* 3. Score Breakdown */}
+        {/* 3. What This Means */}
+        <WhatThisMeans score={result.total_score} checks={result.checks} />
+
+        {/* 4. AI Visibility Summary */}
+        <AIVisibilitySummary checks={result.checks} />
+
+        {/* 5. Why AI Agents Skip Your Site */}
         <h2 className="text-lg sm:text-xl font-bold text-foreground mb-5">
-          Score Breakdown
+          Why AI Agents Skip Your Site
         </h2>
 
-        {/* 4. Check Cards */}
+        {/* 6. Check Cards */}
         <div className="flex flex-col gap-4">
           {result.checks.map((check, i) => (
             <CheckCard key={`card-${i}`} check={check} />
           ))}
         </div>
 
-        {/* 5. Compact view */}
+        {/* 7. Compact view */}
         <details className="mt-8 group">
           <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
             <svg
@@ -425,7 +433,7 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           </div>
         </details>
 
-        {/* 6. Upgrade CTA (moved below all report content) */}
+        {/* 8. Upgrade CTA (moved below all report content) */}
         {result.total_score < 85 && (
           <div className="mt-10">
             {result.upgrade_cta ? (
@@ -436,7 +444,7 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           </div>
         )}
 
-        {/* 7. Share & Download */}
+        {/* 9. Share & Download */}
         <div className="text-center pb-10">
           <div className="flex flex-wrap items-center justify-center gap-3">
             {/* Download Report — dropdown */}

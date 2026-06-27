@@ -37,24 +37,22 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => {
-                const input = document.getElementById("scan-url");
-                if (input) {
-                  input.scrollIntoView({ behavior: "smooth", block: "center" });
+                const target = document.getElementById("scan-url") || document.getElementById("scan");
+                if (target) {
+                  target.scrollIntoView({ behavior: "smooth", block: "center" });
                   requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      input.focus({ preventScroll: true });
-                      // Trigger form validation so empty URL shows an error
-                      const form = input.closest("form");
-                      if (form) {
-                        form.requestSubmit();
-                      }
-                    });
+                    const input = document.getElementById("scan-url");
+                    if (input) {
+                      requestAnimationFrame(() => {
+                        input.focus({ preventScroll: true });
+                      });
+                    }
                   });
                 }
               }}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 cursor-pointer border-0"
             >
-              Run a scan
+              Scan My Website
             </button>
           </div>
         </div>

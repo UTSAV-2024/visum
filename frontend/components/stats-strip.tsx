@@ -4,17 +4,17 @@ const stats = [
   {
     value: "393%",
     label: "AI traffic growth",
-    detail: "Year-over-year increase in visits from AI assistants and agents.",
+    detail: "Year-over-year increase in visits to websites from AI assistants and agent platforms.",
   },
   {
     value: "42%",
-    label: "Better conversion",
-    detail: "Higher conversion when content is machine-readable to agents.",
+    label: "Higher conversion rate",
+    detail: "Referral traffic from AI answers converts at significantly higher rates than traditional search.",
   },
   {
     value: "8",
-    label: "Readiness checks",
-    detail: "Core signals we test, from structured data to agent access.",
+    label: "Visibility checks",
+    detail: "Focused diagnostics from structured data to agent interaction readiness, scored in seconds.",
   },
 ];
 

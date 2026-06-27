@@ -201,17 +201,18 @@ export function Hero({ onScanStart, onScanEnd }) {
           {/* Left column: content — 60% */}
           <div className="flex flex-col gap-6">
             <div className="inline-flex self-start rounded-full bg-accent/10 px-3 py-1 text-xs text-accent">
-              AI agent readiness scanner
+              AI visibility scanner
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-balance text-foreground leading-[1.1]">
-              Is your website{" "}
-              <span className="text-accent">AI-Ready?</span>
+              See Your AI{" "}
+              <span className="text-accent">Visibility Score.</span>
+              <br />
+              Fix It in 10 Minutes.
             </h1>
 
             <p className="text-base sm:text-lg leading-relaxed text-muted-foreground max-w-lg">
-              AI assistants and autonomous agents are the new front door to your business. Visum scans your site in
-              seconds and shows exactly how machines see, read, and act on it.
+              Find out why ChatGPT, Claude, Perplexity, and AI agents ignore your website&mdash;and get actionable fixes instantly.
             </p>
 
             <form onSubmit={handleSubmit} noValidate className="flex w-full flex-col gap-3 sm:flex-row">
@@ -244,7 +245,7 @@ export function Hero({ onScanStart, onScanEnd }) {
                     Scanning...
                   </>
                 ) : (
-                  "Scan my site"
+                  "Scan My Website"
                 )}
               </button>
             </form>
@@ -296,6 +297,31 @@ export function Hero({ onScanStart, onScanEnd }) {
             {error && (
               <p id="scan-error" className="text-sm font-medium text-destructive" role="alert">{error}</p>
             )}
+
+            {/* Secondary CTA */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setUrl("anthropic.com");
+                  if (error) setError("");
+                  // Scroll to scanner and focus
+                  const input = document.getElementById("scan-url");
+                  if (input) {
+                    input.scrollIntoView({ behavior: "smooth", block: "center" });
+                    requestAnimationFrame(() => {
+                      input.focus({ preventScroll: true });
+                    });
+                  }
+                }}
+                className="inline-flex items-center gap-2 text-xs text-muted-foreground border border-border rounded-lg px-4 py-2 hover:bg-secondary transition-colors cursor-pointer bg-transparent"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 002 4.25v2.5A2.25 2.25 0 004.25 9h2.5A2.25 2.25 0 009 6.75v-2.5A2.25 2.25 0 006.75 2h-2.5zm0 9A2.25 2.25 0 002 13.25v2.5A2.25 2.25 0 004.25 18h2.5A2.25 2.25 0 009 15.75v-2.5A2.25 2.25 0 006.75 11h-2.5zm9-9A2.25 2.25 0 0011 4.25v2.5A2.25 2.25 0 0013.25 9h2.5A2.25 2.25 0 0018 6.75v-2.5A2.25 2.25 0 0015.75 2h-2.5zm0 9A2.25 2.25 0 0011 13.25v2.5A2.25 2.25 0 0013.25 18h2.5A2.25 2.25 0 0018 15.75v-2.5A2.25 2.25 0 0015.75 11h-2.5z" clipRule="evenodd" />
+                </svg>
+Try an example
+              </button>
+            </div>
 
             {/* Trust indicators */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
