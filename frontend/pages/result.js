@@ -8,7 +8,18 @@ import ScoreCard from "../components/ScoreCard";
 import { UpgradeCta } from "../components/upgrade-cta";
 import LegacyUpgradePrompt  from "../components/UpgradePrompt";
 import { AIVisibilitySummary } from "../components/ai-visibility-summary";
+import { AIVisibilityJourney } from "../components/ai-visibility-journey";
+import { PriorityFixRoadmap } from "../components/priority-fix-roadmap";
+import { ScoreImprovement } from "../components/score-improvement";
 import { WhatThisMeans } from "../components/what-this-means";
+import { AiAgentCompatibility } from "../components/ai-agent-compatibility";
+import { ScanConfidence } from "../components/scan-confidence";
+import { IndustryBenchmarking } from "../components/industry-benchmarking";
+import { RelativeBenchmark } from "../components/relative-benchmark";
+import { RadarChart } from "../components/radar-chart";
+import { DoNothingConsequences } from "../components/do-nothing-consequences";
+import { SuccessStories } from "../components/success-stories";
+import { ExecutiveSummary } from "../components/executive-summary";
 import { track } from "../lib/posthog";
 
 /**
@@ -382,7 +393,13 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
         {/* 1. Score Hero */}
         <ScoreHero score={result.total_score} url={result.url} scanTimeMs={result.scan_time_ms} />
 
-        {/* 2. Score Card */}
+        {/* 2. Executive Summary */}
+        <ExecutiveSummary score={result.total_score} checks={result.checks} />
+
+        {/* 3. Scan Confidence */}
+        <ScanConfidence checks={result.checks} />
+
+        {/* 4. Score Card */}
         <div className="mt-8">
           <ScoreCard
             score={result.total_score}
@@ -391,25 +408,52 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           />
         </div>
 
-        {/* 3. What This Means */}
+        {/* 5. Score Improvement */}
+        <ScoreImprovement score={result.total_score} checks={result.checks} />
+
+        {/* 6. Industry Benchmarking */}
+        <IndustryBenchmarking score={result.total_score} />
+
+        {/* 7. Relative Benchmark */}
+        <RelativeBenchmark score={result.total_score} />
+
+        {/* 8. AI Readiness Radar */}
+        <RadarChart checks={result.checks} />
+
+        {/* 9. AI Agent Compatibility */}
+        <AiAgentCompatibility checks={result.checks} />
+
+        {/* 10. What This Means */}
         <WhatThisMeans score={result.total_score} checks={result.checks} />
 
-        {/* 4. AI Visibility Summary */}
+        {/* 11. AI Visibility Summary */}
         <AIVisibilitySummary checks={result.checks} />
 
-        {/* 5. Why AI Agents Skip Your Site */}
+        {/* 12. AI Visibility Journey */}
+        <AIVisibilityJourney checks={result.checks} />
+
+        {/* 13. What Happens If You Do Nothing */}
+        <DoNothingConsequences checks={result.checks} />
+
+        {/* 14. Priority Fix Roadmap */}
+        <PriorityFixRoadmap checks={result.checks} />
+
+        {/* 15. Success Stories */}
+        <SuccessStories />
+
+        {/* 16. Why AI Agents Skip Your Site */}
         <h2 className="text-lg sm:text-xl font-bold text-foreground mb-5">
           Why AI Agents Skip Your Site
         </h2>
 
-        {/* 6. Check Cards */}
+        {/* 17. Check Cards */}
         <div className="flex flex-col gap-4">
           {result.checks.map((check, i) => (
             <CheckCard key={`card-${i}`} check={check} />
           ))}
         </div>
 
-        {/* 7. Compact view */}
+        {/* 18. Compact view */}
         <details className="mt-8 group">
           <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
             <svg
@@ -433,7 +477,7 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           </div>
         </details>
 
-        {/* 8. Upgrade CTA (moved below all report content) */}
+        {/* 19. Upgrade CTA (moved below all report content) */}
         {result.total_score < 85 && (
           <div className="mt-10">
             {result.upgrade_cta ? (
@@ -444,7 +488,7 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           </div>
         )}
 
-        {/* 9. Share & Download */}
+        {/* 20. Share & Download */}
         <div className="text-center pb-10">
           <div className="flex flex-wrap items-center justify-center gap-3">
             {/* Download Report — dropdown */}

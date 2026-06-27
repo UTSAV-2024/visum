@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cn } from "../lib/utils";
 
 const statusConfig = {
@@ -66,6 +67,18 @@ const WHY_IT_MATTERS = {
   "Page Load Speed": "AI agents operate under strict timeouts — slow pages get skipped for faster alternatives.",
 };
 
+// ── "What Happens If Ignored" for failed/partial checks ────────────
+const WHAT_HAPPENS_IF_IGNORED = {
+  "AI Bot Permissions (robots.txt)": "Your pages may be excluded from AI-generated search results and chatbot answers entirely.",
+  "JSON-LD Structured Data": "You relinquish control over how your content appears in AI-generated summaries and answers.",
+  "llms.txt File": "Developer-focused AI tools generate less accurate code completions and documentation about your project.",
+  "MCP Endpoint": "Your site remains a static reference rather than an interactive tool for AI agents.",
+  "JavaScript Rendering": "Key pages or dynamic content may remain invisible to AI crawlers indefinitely.",
+  "Meta Tags and Open Graph": "AI-generated link previews and summarizations will lack context and may misrepresent your content.",
+  "Sitemap.xml": "New or updated content can take weeks or months to be discovered by AI crawlers.",
+  "Page Load Speed": "Your pages will increasingly lose visibility as AI agents and search engines tighten their timeout limits.",
+};
+
 export function CheckCard({ check }) {
   const status = check.passed ? "PASS" : check.partial ? "PART" : "FAIL";
   const config = statusConfig[status];
@@ -77,6 +90,9 @@ export function CheckCard({ check }) {
     : check.partial
     ? { label: "Medium Impact", className: "bg-orange-500/10 text-orange-500" }
     : { label: "Low Impact", className: "bg-green-500/10 text-green-500" };
+
+  const [open, setOpen] = useState(false);
+  const detailsId = `check-details-${check.name.replace(/\s+/g, "-").toLowerCase()}`;
 
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 transition-colors hover:border-accent/50">
@@ -161,31 +177,81 @@ export function CheckCard({ check }) {
         </div>
       </div>
 
-      {!check.passed && (
-        <div className="flex flex-col gap-1.5">
-          {/* Humanized explanation */}
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {HUMAN_EXPLANATIONS[check.name]?.[check.partial ? "partial" : "fail"] || check.finding}
-          </p>
-
-          {/* Why This Matters */}
-          <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-500">Why this matters</span>
-            <p className="text-sm leading-relaxed text-muted-foreground mt-0.5">
-              {WHY_IT_MATTERS[check.name] || check.finding}
-            </p>
-          </div>
-        </div>
-      )}
-
+      {/* Passed check: simple finding */}
       {check.passed && check.finding && (
         <p className="text-sm leading-relaxed text-muted-foreground">{check.finding}</p>
       )}
 
-      {!check.passed && check.fix && (
-        <div className="rounded-lg bg-accent/10 px-3 py-2 text-sm leading-relaxed text-accent">
-          <span className="font-semibold">Fix:</span> {check.fix}
-        </div>
+      {/* Failed/partial: accordion details */}
+      {!check.passed && (
+        <>
+          {/* Toggle button */}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            id={`${detailsId}-btn`}
+            aria-expanded={open}
+            aria-controls={detailsId}
+            className="flex items-center justify-between w-full rounded-lg border border-border bg-secondary/30 px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary transition-colors cursor-pointer"
+          >
+            <span>{open ? "Hide Details" : "Show Details"}</span>
+            <svg
+              className={cn("h-4 w-4 transition-transform duration-200", open && "rotate-180")}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+
+          {/* Collapsible details panel */}
+          <div
+            id={detailsId}
+            role="region"
+            aria-labelledby={`${detailsId}-btn`}
+            className={cn(
+              "overflow-hidden transition-all duration-300 ease-in-out",
+              open ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0",
+            )}
+          >
+            <div>
+              <div className="flex flex-col gap-3 pt-1">
+                {/* Humanized explanation */}
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {HUMAN_EXPLANATIONS[check.name]?.[check.partial ? "partial" : "fail"] || check.finding}
+                </p>
+
+                {/* Why This Matters */}
+                <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 px-3 py-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-500">Why This Matters</span>
+                  <p className="text-sm leading-relaxed text-muted-foreground mt-0.5">
+                    {WHY_IT_MATTERS[check.name] || check.finding}
+                  </p>
+                </div>
+
+                {/* What Happens If Ignored */}
+                <div className="rounded-lg bg-red-500/5 border border-red-500/10 px-3 py-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-red-500">What Happens If Ignored</span>
+                  <p className="text-sm leading-relaxed text-muted-foreground mt-0.5">
+                    {WHAT_HAPPENS_IF_IGNORED[check.name] || "Your AI visibility will not improve, and competitors may outrank you in AI-generated results."}
+                  </p>
+                </div>
+
+                {/* Recommended fix */}
+                {check.fix && (
+                  <div className="rounded-lg bg-accent/10 px-3 py-2 text-sm leading-relaxed text-accent">
+                    <span className="font-semibold">Recommended Fix:</span> {check.fix}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </article>
   );

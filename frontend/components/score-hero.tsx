@@ -1,8 +1,9 @@
 import { cn } from "../lib/utils";
-import { getBand } from "../lib/scan-data";
+import { getBand, getGrade } from "../lib/scan-data";
 
 export function ScoreHero({ score, url, scanTimeMs }) {
   const band = getBand(score);
+  const grade = getGrade(score);
   const gradientId = `score-grad-${score}`;
 
   return (
@@ -62,6 +63,24 @@ export function ScoreHero({ score, url, scanTimeMs }) {
       >
         {band.label}
       </span>
+
+      {/* Letter grade */}
+      <div className="flex items-center gap-2.5">
+        <span
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg font-extrabold text-sm ring-1",
+            grade.bg,
+            grade.ring,
+            grade.color,
+          )}
+          aria-label={`Grade ${grade.letter}`}
+        >
+          {grade.letter}
+        </span>
+        <span className="text-xs text-muted-foreground leading-snug max-w-[260px] text-left">
+          {grade.label}
+        </span>
+      </div>
 
       {scanTimeMs != null && (
         <p className="text-xs text-muted-foreground/60">
