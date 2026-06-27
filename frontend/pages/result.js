@@ -53,6 +53,20 @@ export default function Result() {
   const [state, setState] = useState({ type: "loading" });
   const [copied, setCopied] = useState(false);
 
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function handleClick(e) {
+      if (!e.target.closest('[data-dropdown="download"]')) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [dropdownOpen]);
+
   // Read sessionStorage only on the client (after hydration is complete).
   // Wrapped in setTimeout to satisfy react-hooks/set-state-in-effect lint rule.
   useEffect(() => {
@@ -109,19 +123,6 @@ export default function Result() {
   }
 
   const { result } = state.data;
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    function handleClick(e) {
-      if (!e.target.closest('[data-dropdown="download"]')) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
-  }, [dropdownOpen]);
 
   function handleShare() {
     const text = `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness scanner. Is your site visible to ChatGPT and Claude? Check free at visum.io`;
