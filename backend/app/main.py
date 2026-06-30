@@ -20,6 +20,7 @@ from .schemas import (
 )
 from .crawler import SiteCrawler
 from .scorer import run_scan
+from .validation import validate_scan_results
 import json
 from sqlalchemy import create_engine, text
 
@@ -289,12 +290,32 @@ async def scan(request: ScanRequest):
                 except Exception as e:
                     logger.warning(f"Database insert failed: {e}")     
             logger.info(f"[{scan_id}] Score: {result.total_score}/100 band={result.band}")
+
+            # ── Verification: validate every metric before returning ──
+            validation = validate_scan_results(
+                total_score=result.total_score,
+                band=result.band,
+                checks=result.checks,
+                scan_time_ms=result.scan_time_ms,
+            )
+
+            # If validation fails, log but still return (frontend canRender guards handle hiding)
+            if not validation.get("verification", {}).get("can_render_overall", True):
+                logger.warning(
+                    f"[{scan_id}] Validation warnings: "
+                    f"{validation['verification']['blocking_failures']}"
+                )
+
+            # Attach verification metadata to ScanResult
+            result.verification = validation["verification"]
+
             scan_tracker[scan_id].update({
                 "status": ScanStatus.COMPLETED,
                 "total_score": result.total_score,
                 "band": result.band,
                 "completed_at": time.time(),
             })
+
             return ScanResponse(scan_id=scan_id, result=result, status=ScanStatus.COMPLETED)
         finally:
             scan_semaphore.release()

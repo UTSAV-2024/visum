@@ -28,6 +28,7 @@ class ScanResult(BaseModel):
     scan_time_ms: int
     timestamp:    str
     upgrade_cta:  str        # personalised upgrade prompt
+    verification: Optional[dict] = None  # verification metadata (validation status, evidence checks)
  
 class ScanRequest(BaseModel):
     url: str                 # we validate manually, not with HttpUrl
