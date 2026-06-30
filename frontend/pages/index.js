@@ -3,7 +3,6 @@ import { SiteHeader } from "../components/site-header";
 import { Hero } from "../components/hero";
 import { StatsStrip } from "../components/stats-strip";
 import { ChecksSection } from "../components/checks-section";
-import { BenchmarkSection } from "../components/benchmark-section";
 import { SocialProof } from "../components/social-proof";
 import { ComparisonSection } from "../components/comparison-section";
 import { UpgradeCta } from "../components/upgrade-cta";
@@ -64,7 +63,6 @@ export default function Home() {
 
         <ComparisonSection />
 
-        <BenchmarkSection />
         <ChecksSection />
         <SocialProof />
         <UpgradeCta />

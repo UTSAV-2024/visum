@@ -137,7 +137,7 @@ export function SuccessStories() {
 
         {/* Disclaimer */}
         <p className="mt-4 text-[10px] text-muted-foreground/50 text-center">
-          Results are illustrative examples based on typical scan outcomes. Individual results may vary.
+          These are <strong>illustrative examples</strong> showing potential outcomes. They are not real customer results. Individual results vary.
         </p>
       </div>
     </section>

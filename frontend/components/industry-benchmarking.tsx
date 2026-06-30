@@ -1,18 +1,15 @@
 import { cn } from "../lib/utils";
 import { getBand } from "../lib/scan-data";
 
-// ── Benchmark constants ─────────────────────────────────────────────
-// These are reasonable estimates based on the scoring system's own bands.
-// The industry average (55) sits between "Fair — Many Gaps" (40-64) bands.
-// Top performers (85+) align with "Excellent — Agent Ready" threshold.
-// These are NOT from a statistical survey — they are heuristic benchmarks
-// derived from the scoring system's own design.
+// ── Target score constants ─────────────────────────────────────────
+// These are scoring system thresholds, not industry averages.
+// The "Partially Visible" band starts at 65, "Agent-Ready" starts at 85.
 
-const INDUSTRY_AVERAGE = 55;
-const TOP_PERFORMER_THRESHOLD = 85;
+const TARGET_SCORE = 65;
+const AGENT_READY_THRESHOLD = 85;
 
-const AVERAGE_BAND = getBand(INDUSTRY_AVERAGE); // "Fair — Many Gaps"
-const TOP_BAND = getBand(TOP_PERFORMER_THRESHOLD); // "Excellent — Agent Ready"
+const TARGET_BAND = getBand(TARGET_SCORE);
+const READY_BAND = getBand(AGENT_READY_THRESHOLD);
 
 // ── Component ───────────────────────────────────────────────────────
 
@@ -27,9 +24,9 @@ export function IndustryBenchmarking({ score }: { score: number }) {
       <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 mb-5">
-          <h2 className="text-sm font-semibold text-foreground">Industry Benchmarking</h2>
+          <h2 className="text-sm font-semibold text-foreground">Score Benchmarks</h2>
           <span className="rounded-full bg-secondary/30 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border">
-            Estimated
+            System Thresholds
           </span>
         </div>
 
@@ -62,22 +59,22 @@ export function IndustryBenchmarking({ score }: { score: number }) {
             </svg>
           </div>
 
-          {/* Industry Average (estimated) */}
+          {/* Target Score (system threshold) */}
           <div className="flex flex-col items-center px-2 py-3 sm:px-3 sm:py-4">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              Industry Avg.
+              Target Score
             </span>
             <span className="font-mono text-2xl sm:text-3xl font-extrabold leading-none text-accent">
-              {INDUSTRY_AVERAGE}
+              {TARGET_SCORE}
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 text-center leading-tight hidden sm:block">
-              {AVERAGE_BAND.label}
+              {TARGET_BAND.label}
             </span>
             {/* Mini bar */}
             <div className="mt-2 h-1 w-full max-w-[80px] rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full bg-accent"
-                style={{ width: barWidth(INDUSTRY_AVERAGE) }}
+                style={{ width: barWidth(TARGET_SCORE) }}
               />
             </div>
           </div>
@@ -89,16 +86,16 @@ export function IndustryBenchmarking({ score }: { score: number }) {
             </svg>
           </div>
 
-          {/* Top Performers */}
+          {/* Agent Ready (max threshold) */}
           <div className="flex flex-col items-center px-2 py-3 sm:px-3 sm:py-4">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              Top Performers
+              Agent Ready
             </span>
             <span className="font-mono text-2xl sm:text-3xl font-extrabold leading-none text-green-500">
-              {TOP_PERFORMER_THRESHOLD}+
+              {AGENT_READY_THRESHOLD}
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 text-center leading-tight hidden sm:block">
-              {TOP_BAND.label}
+              {READY_BAND.label}
             </span>
             {/* Mini bar */}
             <div className="mt-2 h-1 w-full max-w-[80px] rounded-full bg-muted overflow-hidden">
@@ -113,28 +110,26 @@ export function IndustryBenchmarking({ score }: { score: number }) {
         {/* Contextual message */}
         <div className="mt-4 pt-3 border-t border-border">
           <p className="text-xs text-muted-foreground leading-relaxed text-center">
-            {score > INDUSTRY_AVERAGE ? (
+            {score >= AGENT_READY_THRESHOLD ? (
               <>
-                You are performing <strong className="text-foreground">above the estimated average</strong>.{" "}
-                {score >= TOP_PERFORMER_THRESHOLD
-                  ? "Your site ranks among top performers for AI visibility."
-                  : "Closing the remaining gaps could put you among top performers."}
+                Your score is in the <strong className="text-foreground">Agent Ready</strong> range.{" "}
+                Your site meets the highest standard for AI visibility.
               </>
-            ) : score === INDUSTRY_AVERAGE ? (
+            ) : score >= TARGET_SCORE ? (
               <>
-                You are at <strong className="text-foreground">the estimated industry average</strong>.{" "}
-                Fixing the identified gaps could push you above average.
+                You are <strong className="text-foreground">above the target score</strong> of {TARGET_SCORE}.{" "}
+                Closing the remaining gaps could put you in the Agent Ready range.
               </>
             ) : (
               <>
-                You are <strong className="text-foreground">below the typical AI visibility level</strong>.{" "}
-                Most optimized sites score {TOP_PERFORMER_THRESHOLD}+ across all checks.
+                The target score is <strong className="text-foreground">{TARGET_SCORE}</strong> (Partially Visible).{" "}
+                Optimized sites score {AGENT_READY_THRESHOLD}+ across all checks.
               </>
             )}
           </p>
-          {/* Disclaimer */}
+          {/* Note */}
           <p className="mt-2 text-[10px] text-muted-foreground/50 text-center">
-            Benchmarks are estimates based on the scoring system&apos;s own design thresholds. Not derived from external industry data.
+            Target scores are based on the scoring system&apos;s design thresholds. Not industry averages.
           </p>
         </div>
       </div>

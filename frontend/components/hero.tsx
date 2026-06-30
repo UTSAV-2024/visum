@@ -348,7 +348,12 @@ Try an example
 
           {/* Right column: preview card — 40% */}
           <div className="hidden lg:block justify-self-end w-full max-w-sm">
-            <HeroPreviewCard />
+            <div className="relative">
+              <span className="absolute -top-2 -right-2 z-10 rounded-full bg-accent/10 border border-accent/20 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                Example
+              </span>
+              <HeroPreviewCard />
+            </div>
           </div>
         </div>
       </Container>

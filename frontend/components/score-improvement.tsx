@@ -104,15 +104,20 @@ export function ScoreImprovement({ score, checks }: { score: number; checks: Che
           {/* Projected State */}
           <div
             className={cn(
-              "flex flex-col items-center rounded-xl px-4 sm:px-6 py-4 ring-1 border border-border min-w-0 flex-1 max-w-[180px]",
+              "flex flex-col items-center rounded-xl px-4 sm:px-6 py-4 ring-1 border border-dashed min-w-0 flex-1 max-w-[180px]",
               projectedStyle.bg,
               projectedStyle.ring,
             )}
           >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Projected State
-            </span>
-            <span className={cn("font-mono text-3xl sm:text-4xl font-extrabold leading-none mt-2", projectedBand.text)}>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Projected State
+              </span>
+              <span className="rounded-full bg-secondary/30 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground border border-border">
+                Estimated
+              </span>
+            </div>
+            <span className={cn("font-mono text-3xl sm:text-4xl font-extrabold leading-none mt-1", projectedBand.text)}>
               {projected}
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 text-balance text-center leading-tight">
@@ -145,6 +150,7 @@ export function ScoreImprovement({ score, checks }: { score: number; checks: Che
           Fixing issues shown above could move you from{" "}
           <strong className="text-foreground/80">{currentBand.label}</strong> to{" "}
           <strong className="text-foreground/80">{projectedBand.label}</strong>.
+          Projected score assumes all issues are fully resolved. Actual results may vary.
         </p>
       </div>
     </section>

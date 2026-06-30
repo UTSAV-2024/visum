@@ -2,19 +2,19 @@ import { Container } from "./container";
 
 const stats = [
   {
-    value: "393%",
-    label: "AI traffic growth",
-    detail: "Year-over-year increase in visits to websites from AI assistants and agent platforms.",
-  },
-  {
-    value: "42%",
-    label: "Higher conversion rate",
-    detail: "Referral traffic from AI answers converts at significantly higher rates than traditional search.",
-  },
-  {
     value: "8",
     label: "Visibility checks",
     detail: "Focused diagnostics from structured data to agent interaction readiness, scored in seconds.",
+  },
+  {
+    value: "~20s",
+    label: "Scan duration",
+    detail: "Most scans complete in under 20 seconds, including JavaScript rendering and performance measurement.",
+  },
+  {
+    value: "Free",
+    label: "No signup required",
+    detail: "Enter any public URL and get a full AI readiness report instantly — no account needed.",
   },
 ];
 

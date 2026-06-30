@@ -1,24 +1,11 @@
 import { cn } from "../lib/utils";
+import { getBand } from "../lib/scan-data";
 
-// ── Score bands (mirrors backend without conflicting) ───────────────
-const BANDS = [
-  { min: 91, label: "Agent-Optimized",  color: "text-green-500",  bg: "bg-green-500/10",   ring: "ring-green-500/30",  pill: "bg-green-500/20 text-green-500" },
-  { min: 76, label: "AI-Ready",          color: "text-green-400",  bg: "bg-green-500/5",    ring: "ring-green-500/20",  pill: "bg-green-500/10 text-green-400" },
-  { min: 51, label: "Partially Visible", color: "text-accent",     bg: "bg-accent/10",       ring: "ring-accent/30",     pill: "bg-accent/10 text-accent" },
-  { min: 26, label: "Mostly Invisible",  color: "text-orange-500", bg: "bg-orange-500/10",   ring: "ring-orange-500/30", pill: "bg-orange-500/20 text-orange-500" },
-  { min: 0,  label: "Agent-Invisible",   color: "text-red-500",    bg: "bg-red-500/10",      ring: "ring-red-500/30",    pill: "bg-red-500/20 text-red-500" },
-];
-
-function getBand(score) {
-  return BANDS.find((b) => score >= b.min) || BANDS[BANDS.length - 1];
-}
-
-// ── Score interpretation text ───────────────────────────────────────
+// ── Score interpretation text (aligned with backend band thresholds) ─
 function getInterpretation(score) {
-  if (score >= 91) return "Your site is exceptionally well prepared for AI agents and is positioned to maximize AI visibility.";
-  if (score >= 76) return "Your site is highly accessible to AI systems and performs well across most visibility checks.";
-  if (score >= 51) return "Your site is partially optimized for AI systems, but several improvements could significantly increase visibility.";
-  if (score >= 26) return "AI systems can discover your site, but major visibility issues reduce the likelihood of citations and recommendations.";
+  if (score >= 85) return "Your site is well-prepared for AI agents and positioned to maximize AI visibility.";
+  if (score >= 65) return "Your site is partially accessible to AI systems, but several improvements could significantly increase visibility.";
+  if (score >= 40) return "AI systems can discover your site, but major visibility issues reduce the likelihood of citations and recommendations.";
   return "Most AI agents cannot properly access, understand, or interact with your site.";
 }
 
@@ -77,7 +64,7 @@ export function WhatThisMeans({ score, checks }) {
 
   return (
     <div className="mt-8 rounded-xl border border-border bg-card p-6 sm:p-8">
-      {/* Header + visual band */}
+      {/* Header + visual band (uses backend-aligned getBand from scan-data) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <h2 className="text-lg sm:text-xl font-bold text-foreground">What This Means</h2>
         <span className={cn("self-start rounded-full px-4 py-1 text-xs font-semibold tracking-wide", band.pill)}>
