@@ -31,18 +31,18 @@ export function SiteFooter() {
           <div>
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Company</h4>
             <ul className="space-y-3 text-sm">
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">About</span></li>
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Blog</span></li>
-              <li><a href="mailto:utsav@visum.io" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
+              <li><a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</a></li>
+              <li><a href="/about#roadmap" className="text-muted-foreground hover:text-foreground transition-colors">Roadmap</a></li>
+              <li><a href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Legal</h4>
             <ul className="space-y-3 text-sm">
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Privacy</span></li>
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Terms</span></li>
-              <li><span className="text-muted-foreground cursor-default opacity-60" title="Coming soon">Cookie Policy</span></li>
+              <li><a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</a></li>
+              <li><a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms</a></li>
+              <li><a href="/privacy#cookies" className="text-muted-foreground hover:text-foreground transition-colors">Cookie Policy</a></li>
             </ul>
           </div>
         </div>
@@ -52,7 +52,7 @@ export function SiteFooter() {
             &copy; {year} Visum. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">Twitter</span>
+            <a href="https://twitter.com/visumhq" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors" aria-label="Visum on Twitter">Twitter</a>
             <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">GitHub</span>
             <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">LinkedIn</span>
           </div>
