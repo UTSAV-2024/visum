@@ -1,0 +1,18 @@
+# Allow Googlebot to crawl the entire site
+User-agent: Googlebot
+Allow: /
+
+# Allow Google AdSense crawler
+User-agent: Mediapartners-Google
+Allow: /
+
+# Allow Google AdSense verification bot
+User-agent: AdsBot-Google
+Allow: /
+
+# Allow all other crawlers
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://visum-eight.vercel.app/sitemap.xml
