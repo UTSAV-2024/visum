@@ -1,5 +1,7 @@
+import { useEffect, useRef } from "react";
 import { cn } from "../lib/utils";
 import type { ReactNode } from "react";
+import { track } from "../lib/analytics";
 
 // ── Agent definitions ────────────────────────────────────────────────
 
@@ -220,6 +222,29 @@ function computeAgentScore(
 // ── Main component ───────────────────────────────────────────────────
 
 export function AiAgentCompatibility({ checks }: { checks: Array<{ name: string; score: number; max_score: number; passed: boolean; partial?: boolean }> }) {
+  const sectionRef = useRef(null);
+  const trackedRef = useRef(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || !checks) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !trackedRef.current) {
+          trackedRef.current = true;
+          const failing = checks.filter((c) => !c.passed).length;
+          track("scrolled_to_compatibility", {
+            total_checks: checks.length,
+            failing_checks: failing,
+          });
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checks]);
+
   if (!checks || checks.length === 0) return null;
 
   // Build a lookup map
@@ -231,7 +256,7 @@ export function AiAgentCompatibility({ checks }: { checks: Array<{ name: string;
   const scores = AGENTS.map((agent) => computeAgentScore(agent, checkMap));
 
   return (
-    <section aria-label="AI Agent Compatibility" className="mt-10">
+    <section ref={sectionRef} aria-label="AI Agent Compatibility" className="mt-10">
       {/* Header */}
       <div className="mb-5">
         <h2 className="text-lg sm:text-xl font-bold text-foreground">AI Agent Compatibility</h2>

@@ -6,32 +6,30 @@ export function SocialProof() {
       <Container>
         <div className="mx-auto max-w-3xl text-center">
           <div className="inline-flex self-center rounded-full bg-accent/10 px-3 py-1 text-xs text-accent mb-6">
-            Built for the agentic web
+            Why Visum Is Different
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground text-balance">
-            Websites are increasingly optimizing for AI agents
+            Your SEO Tools Don't Measure AI Visibility. Visum Does.
           </h2>
 
           <p className="mt-5 text-base sm:text-lg leading-relaxed text-muted-foreground max-w-2xl mx-auto">
-            See how your site performs compared to modern standards. Visum evaluates your
-            visibility to ChatGPT, Claude, Gemini, and AI-powered search — so you can fix
-            gaps before they cost you traffic.
+            Visum runs 8 automated checks based on the technical signals documented by OpenAI, Anthropic, Google, and Perplexity for how their AI systems discover and evaluate web content.
           </p>
 
           <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
             {[
               {
-                title: "AI Search Visibility",
-                desc: "AI-powered search engines and assistants increasingly drive referral traffic. Ensure your content is discoverable and usable by these new interfaces.",
+                title: "Beyond Google Rankings",
+                desc: "AI assistants like ChatGPT and Perplexity don't rank pages the way Google does. They cite sources based on technical signals — structured data, crawl permissions, and content accessibility.",
               },
               {
-                title: "Agent Readiness",
-                desc: "Autonomous agents can browse, evaluate, and act on your site — but only if it's structured, crawlable, and machine-readable.",
+                title: "Every Result Includes the Raw Evidence",
+                desc: "Each failed check shows you exactly what we found — the blocked bot, the missing schema field, the timeout duration. You don't have to trust our opinion; you can see the data.",
               },
               {
-                title: "Competitive Edge",
-                desc: "Most sites are not yet optimized for AI agents. Early adopters gain a meaningful advantage in visibility and AI-driven conversions.",
+                title: "Free Scan, No Signup, Instant Results",
+                desc: "Enter any public URL. Get a full AI readiness report in about 20 seconds. No account, no credit card, no email required.",
               },
             ].map((item) => (
               <div

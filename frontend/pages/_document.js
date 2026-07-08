@@ -23,6 +23,15 @@ export default function Document() {
         {/* Robots */}
         <meta name="robots" content="index, follow" />
 
+        {/* Theme Color */}
+        <meta name="theme-color" content="#0a0a0f" />
+
+        {/* Icons */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        <link rel="apple-touch-icon" href="/icon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="manifest" href="/site.webmanifest" />
+
         {/* Open Graph */}
         <meta property="og:site_name" content="Visum — AI Agent Readiness Scanner" />
         <meta property="og:type" content="website" />
@@ -32,6 +41,10 @@ export default function Document() {
           content="See how AI agents like ChatGPT and Claude read your website. Free scan in 30 seconds."
         />
         <meta property="og:url" content="https://visum-eight.vercel.app" />
+        <meta property="og:image" content="https://visum-eight.vercel.app/og-image.svg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Visum — AI Agent Readiness Scanner. Get your free AI visibility score." />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -40,6 +53,7 @@ export default function Document() {
           name="twitter:description"
           content="See how AI agents like ChatGPT and Claude read your website. Free scan in 30 seconds."
         />
+        <meta name="twitter:image" content="https://visum-eight.vercel.app/og-image.svg" />
       </Head>
       <body className="antialiased">
         <Main />

@@ -107,9 +107,9 @@ export function RadarChart({ checks }: { checks: Check[] }) {
   return (
     <section aria-label="AI Readiness Radar" className="mt-8">
       <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-foreground mb-1">AI Readiness Radar</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-1">Score Breakdown</h2>
         <p className="text-xs text-muted-foreground mb-5">
-          Visual breakdown of your strengths and weaknesses across 5 dimensions.
+          How your site performed across 5 dimensions of AI visibility.
         </p>
 
         <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10">

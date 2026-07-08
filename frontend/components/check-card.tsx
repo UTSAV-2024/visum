@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cn } from "../lib/utils";
+import { track } from "../lib/analytics";
 
 const statusConfig = {
   PASS: {
@@ -17,66 +18,64 @@ const statusConfig = {
     className: "bg-red-500/20 text-red-500",
     bar: "bg-red-500",
   },
-};
-
-// ── Humanized explanations for failed/partial checks ────────────────
+};  // ── Humanized explanations for failed/partial checks ────────────────
 const HUMAN_EXPLANATIONS = {
   "AI Bot Permissions (robots.txt)": {
-    fail: "AI crawlers are blocked from accessing your site by your robots.txt configuration.",
-    partial: "Some AI crawlers can access your site, but others are being blocked.",
+    fail: "Your robots.txt blocks AI crawlers from accessing your site. ChatGPT, Claude, and Perplexity cannot see your content.",
+    partial: "Some AI crawlers have access, but others are blocked. Check which specific bots are restricted in your robots.txt.",
   },
   "JSON-LD Structured Data": {
-    fail: "AI systems cannot reliably understand what your pages are about.",
-    partial: "AI systems can only partially understand what your pages are about.",
+    fail: "No structured data found. AI systems have no reliable way to determine what your pages are about.",
+    partial: "Structured data exists but is incomplete. Missing fields prevent AI systems from confidently understanding your content.",
   },
   "llms.txt File": {
-    fail: "Developer-focused AI tools have less guidance about your content.",
-    partial: "AI coding assistants have incomplete guidance about your project.",
+    fail: "No llms.txt file found. AI coding assistants have no structured guidance about your project. Low priority for most sites.",
+    partial: "llms.txt exists but is missing key fields (project name, description, or documentation URLs).",
   },
   "MCP Endpoint": {
-    fail: "AI agents cannot directly interact with your content.",
-    partial: "AI agents have limited ability to interact with your content.",
+    fail: "No API or MCP endpoint found. AI agents can only read your pages — they cannot check pricing, inventory, or take actions.",
+    partial: "An OpenAPI spec was found but no true MCP endpoint. Partial agent interaction is possible.",
   },
   "JavaScript Rendering": {
-    fail: "Some AI crawlers may never see your content because it loads too late.",
-    partial: "Some AI crawlers may miss part of your content due to JavaScript loading.",
+    fail: "Your content depends heavily on JavaScript. AI crawlers that don't run JS see almost nothing on your pages.",
+    partial: "Some content is available without JavaScript, but important parts depend on client-side rendering.",
   },
   "Meta Tags and Open Graph": {
-    fail: "AI systems lack the information needed to understand and cite your pages.",
-    partial: "AI systems have incomplete information for understanding your pages.",
+    fail: "Critical meta tags are missing. AI systems lack the information needed to understand and accurately cite your pages.",
+    partial: "Some meta tags are present but incomplete. Missing og:description or short meta description limits AI understanding.",
   },
   "Sitemap.xml": {
-    fail: "AI systems may miss important pages on your site.",
-    partial: "AI systems have limited guidance for prioritising your pages.",
+    fail: "No sitemap found. AI crawlers have no roadmap of your pages and may miss important content.",
+    partial: "Sitemap found but lacks lastmod dates, limiting AI crawlers' ability to prioritize fresh content.",
   },
   "Page Load Speed": {
-    fail: "AI agents may time out before your page finishes loading.",
-    partial: "Some AI agents may time out before your page finishes loading.",
+    fail: "Your pages load slowly (>4 seconds). AI agents often time out before your content finishes rendering.",
+    partial: "Your pages load at a moderate speed. Some AI agents may time out, especially on slower connections.",
   },
 };
 
 // ── "Why This Matters" for failed/partial checks ───────────────────
 const WHY_IT_MATTERS = {
-  "AI Bot Permissions (robots.txt)": "AI-powered search engines and chatbots cannot access or reference your content if blocked.",
-  "JSON-LD Structured Data": "Without structured data, AI systems may struggle to understand and cite your content.",
-  "llms.txt File": "Developer tools and coding assistants like Cursor and Copilot cannot easily reference your project.",
-  "MCP Endpoint": "Future AI agents may be unable to perform actions using your site.",
-  "JavaScript Rendering": "If content appears only after rendering, some AI systems may never process it.",
-  "Meta Tags and Open Graph": "AI summarization tools rely on meta tags to accurately describe your site in search results.",
-  "Sitemap.xml": "AI crawlers without a sitemap may never discover your newest or deepest pages.",
-  "Page Load Speed": "AI agents operate under strict timeouts — slow pages get skipped for faster alternatives.",
+  "AI Bot Permissions (robots.txt)": "Every blocked AI crawler is a lost opportunity to appear in AI search results and chatbot answers.",
+  "JSON-LD Structured Data": "AI systems cite websites they understand. Structured data is a direct signal that increases citation rates.",
+  "llms.txt File": "Without llms.txt, AI assistants have no structured guidance about what your site offers. Less relevant for most businesses.",
+  "MCP Endpoint": "AI agents that can query your site directly get cited more often. An MCP endpoint turns your site from a reference into a data source.",
+  "JavaScript Rendering": "Content that only appears after JavaScript runs is invisible to many AI crawlers. Your most important pages may not exist to AI.",
+  "Meta Tags and Open Graph": "AI summarization tools rely on meta tags to describe your site when they cite it. Missing tags = missing context in AI answers.",
+  "Sitemap.xml": "Without a sitemap, new products and pages can take weeks to appear in AI crawler indexes.",
+  "Page Load Speed": "AI agents have strict timeouts — typically 5–10 seconds. A slow page gets skipped entirely, even if the content is perfect.",
 };
 
 // ── "What Happens If Ignored" for failed/partial checks ────────────
 const WHAT_HAPPENS_IF_IGNORED = {
-  "AI Bot Permissions (robots.txt)": "Your pages may be excluded from AI-generated search results and chatbot answers entirely.",
-  "JSON-LD Structured Data": "You relinquish control over how your content appears in AI-generated summaries and answers.",
-  "llms.txt File": "Developer-focused AI tools generate less accurate code completions and documentation about your project.",
-  "MCP Endpoint": "Your site remains a static reference rather than an interactive tool for AI agents.",
-  "JavaScript Rendering": "Key pages or dynamic content may remain invisible to AI crawlers indefinitely.",
-  "Meta Tags and Open Graph": "AI-generated link previews and summarizations will lack context and may misrepresent your content.",
-  "Sitemap.xml": "New or updated content can take weeks or months to be discovered by AI crawlers.",
-  "Page Load Speed": "Your pages will increasingly lose visibility as AI agents and search engines tighten their timeout limits.",
+  "AI Bot Permissions (robots.txt)": "Your site will be excluded from AI search results. Competitors with open permissions will capture that traffic.",
+  "JSON-LD Structured Data": "AI systems will guess what your pages are about — often incorrectly. You lose control over how you're described in AI answers.",
+  "llms.txt File": "Minimal impact for most businesses. Focus on higher-priority fixes first.",
+  "MCP Endpoint": "Your site is a read-only reference. AI agents cannot check your pricing, inventory, or availability in real time.",
+  "JavaScript Rendering": "Pages that depend on JavaScript may never be indexed by AI crawlers. Products, blog posts, and landing pages remain invisible.",
+  "Meta Tags and Open Graph": "AI tools will use generic, auto-generated descriptions for your site in search results — missing keywords, offers, and differentiators.",
+  "Sitemap.xml": "New products and content take weeks to be discovered. Your latest offerings won't appear in AI answers until weeks later.",
+  "Page Load Speed": "Slow pages get dropped from AI indexes. As more sites optimize for speed, slow sites lose disproportionate visibility.",
 };
 
 export function CheckCard({ check }) {
@@ -86,13 +85,31 @@ export function CheckCard({ check }) {
 
   // Derive priority from check status
   const priority = !check.passed && !check.partial
-    ? { label: "High Impact", className: "bg-red-500/10 text-red-500" }
+    ? { label: "Fix Now", className: "bg-red-500/10 text-red-500" }
     : check.partial
-    ? { label: "Medium Impact", className: "bg-orange-500/10 text-orange-500" }
-    : { label: "Low Impact", className: "bg-green-500/10 text-green-500" };
+    ? { label: "Improve", className: "bg-orange-500/10 text-orange-500" }
+    : { label: "Good", className: "bg-green-500/10 text-green-500" };
 
   const [open, setOpen] = useState(false);
   const detailsId = `check-details-${check.name.replace(/\s+/g, "-").toLowerCase()}`;
+
+  function handleToggle() {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      track("expanded_check", {
+        check_name: check.name,
+        check_status: status,
+        check_score: check.score,
+        check_max_score: check.max_score,
+      });
+      track("clicked_recommendation", {
+        check_name: check.name,
+        check_status: status,
+        check_score: check.score,
+      });
+    }
+  }
 
   return (
     <article className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 transition-colors hover:border-accent/50">
@@ -143,7 +160,7 @@ export function CheckCard({ check }) {
             </span>
           )}
           <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide", config.className)}>
-            {config.label}
+            {status === "PASS" ? "✓" : status === "PART" ? "Needs Work" : "FAIL"}
           </span>
         </div>
       </div>
@@ -188,13 +205,13 @@ export function CheckCard({ check }) {
           {/* Toggle button */}
           <button
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={handleToggle}
             id={`${detailsId}-btn`}
             aria-expanded={open}
             aria-controls={detailsId}
             className="flex items-center justify-between w-full rounded-lg border border-border bg-secondary/30 px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary transition-colors cursor-pointer"
           >
-            <span>{open ? "Hide Details" : "Show Details"}</span>
+            <span>{open ? "Hide Fix" : "Show Fix"}</span>
             <svg
               className={cn("h-4 w-4 transition-transform duration-200", open && "rotate-180")}
               viewBox="0 0 20 20"

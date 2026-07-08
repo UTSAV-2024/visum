@@ -1,10 +1,12 @@
+import { useEffect, useRef } from "react";
 import { cn } from "../lib/utils";
+import { track } from "../lib/analytics";
 
 // ── Priority label config ───────────────────────────────────────────
 const PRIORITY_CONFIG = [
-  { rank: 1, label: "Priority 1", impact: "High", dot: "bg-red-500", bar: "bg-red-500", border: "border-red-500/20", bg: "bg-red-500/5" },
-  { rank: 2, label: "Priority 2", impact: "Medium", dot: "bg-accent", bar: "bg-accent", border: "border-accent/20", bg: "bg-accent/5" },
-  { rank: 3, label: "Priority 3", impact: "Medium", dot: "bg-orange-500", bar: "bg-orange-500", border: "border-orange-500/20", bg: "bg-orange-500/5" },
+  { rank: 1, label: "Priority 1", impact: "Quick Win", dot: "bg-red-500", bar: "bg-red-500", border: "border-red-500/20", bg: "bg-red-500/5" },
+  { rank: 2, label: "Priority 2", impact: "High Value", dot: "bg-accent", bar: "bg-accent", border: "border-accent/20", bg: "bg-accent/5" },
+  { rank: 3, label: "Priority 3", impact: "Worth Doing", dot: "bg-orange-500", bar: "bg-orange-500", border: "border-orange-500/20", bg: "bg-orange-500/5" },
 ];
 
 // ── Check name → short label & estimated time ──────────────────────
@@ -76,16 +78,37 @@ function formatFix(check) {
 // ── Main component ─────────────────────────────────────────────────
 export function PriorityFixRoadmap({ checks }) {
   const prioritized = sortFailing(checks);
+  const sectionRef = useRef(null);
+  const trackedRef = useRef(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !trackedRef.current) {
+          trackedRef.current = true;
+          track("scrolled_to_roadmap", {
+            failed_count: prioritized.length,
+            top_issue: prioritized[0]?.name || "",
+          });
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [prioritized]);
 
   if (prioritized.length === 0) return null;
 
   return (
-    <section aria-label="Priority Fix Roadmap" className="mt-10">
+    <section ref={sectionRef} aria-label="Priority Fix Roadmap" className="mt-10">
       {/* Header */}
       <div className="mb-5">
-        <h2 className="text-lg sm:text-xl font-bold text-foreground">Quick Wins</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-foreground">Your Priority Fix List</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Start with the highest-impact fixes that take the least time.
+          Sorted by impact per minute of effort. Start with #1.
         </p>
       </div>
 

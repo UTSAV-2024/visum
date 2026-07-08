@@ -33,7 +33,7 @@ const QUADRANTS = [
     ),
     iconBg: "bg-green-500/10 text-green-500",
     accentRing: "ring-green-500/20",
-    emptyMsg: "No notable strengths detected.",
+    emptyMsg: "No major strengths identified. Focus on fixing weaknesses first.",
   },
   {
     key: "weaknesses",
@@ -49,7 +49,7 @@ const QUADRANTS = [
     ),
     iconBg: "bg-red-500/10 text-red-500",
     accentRing: "ring-red-500/20",
-    emptyMsg: "No major AI visibility issues detected.",
+    emptyMsg: "No critical issues found.",
   },
   {
     key: "opportunities",
@@ -65,7 +65,7 @@ const QUADRANTS = [
     ),
     iconBg: "bg-accent/10 text-accent",
     accentRing: "ring-accent/20",
-    emptyMsg: "Your site is already well optimized.",
+    emptyMsg: "No additional opportunities detected at this time.",
   },
   {
     key: "risks",
@@ -81,7 +81,7 @@ const QUADRANTS = [
     ),
     iconBg: "bg-orange-500/10 text-orange-500",
     accentRing: "ring-orange-500/20",
-    emptyMsg: "No immediate risks detected.",
+    emptyMsg: "No immediate risks identified.",
   },
 ];
 
@@ -148,9 +148,9 @@ export function AIVisibilitySummary({ checks }) {
     <section aria-label="AI Visibility Summary" className="mt-10">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-lg sm:text-xl font-bold text-foreground">AI Visibility Summary</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-foreground">What's Working & What's Not</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Here&rsquo;s the fastest summary of what&rsquo;s helping and hurting your AI visibility.
+          Prioritized breakdown of strengths, weaknesses, opportunities, and risks.
         </p>
       </div>
 

@@ -45,7 +45,7 @@ class SiteCrawler:
     async def crawl(self, url: str) -> dict:
         url = self.normalise_url(url)
         base_url = self.get_base_url(url)
-        start = time.time()
+        crawl_start = time.time()
 
         crawl_data = {
             "url":          url,
@@ -63,6 +63,7 @@ class SiteCrawler:
         }
 
         # ── Step 1: Parallel httpx fetches ──────────────────────────────────
+        http_start = time.time()
         try:
             async with httpx.AsyncClient(
                 timeout=self.http_timeout,
@@ -89,15 +90,28 @@ class SiteCrawler:
                 if not isinstance(results[4], Exception) and results[4]:
                     crawl_data["mcp_response"] = results[4]
 
-            logger.info(f"httpx done. html_static={len(crawl_data['html_static'])} robots={bool(crawl_data['robots_txt'])} sitemap={bool(crawl_data['sitemap_xml'])}")
+            http_elapsed = time.time() - http_start
+            logger.info(
+                f"Crawl stage=httpx url={url} elapsed={http_elapsed:.1f}s "
+                f"html_static={len(crawl_data['html_static'])} "
+                f"robots={bool(crawl_data['robots_txt'])} "
+                f"sitemap={bool(crawl_data['sitemap_xml'])}"
+            )
 
+        except asyncio.TimeoutError:
+            logger.error(f"Crawl stage=httpx url={url} elapsed={time.time()-http_start:.1f}s error=timeout")
+            crawl_data["error"] = "httpx: timeout"
+        except httpx.TimeoutException as e:
+            logger.error(f"Crawl stage=httpx url={url} elapsed={time.time()-http_start:.1f}s error=httpx_timeout")
+            crawl_data["error"] = f"httpx: timeout - {str(e)}"
         except Exception as e:
-            logger.error(f"httpx phase failed: {e}")
+            logger.error(f"Crawl stage=httpx url={url} elapsed={time.time()-http_start:.1f}s error={type(e).__name__}: {e}")
             crawl_data["error"] = f"httpx: {str(e)}"
 
         # ── Step 2: Playwright JS render ────────────────────────────────────
+        playwright_start = time.time()
         try:
-            logger.info(f"Playwright starting for {url}")
+            logger.info(f"Crawl stage=playwright url={url} starting")
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 context = await browser.new_context(
@@ -130,6 +144,7 @@ class SiteCrawler:
 
                 await browser.close()
 
+            playwright_elapsed = time.time() - playwright_start
             crawl_data["html_rendered"] = content
             crawl_data["performance"] = {
                 "ttfb_ms": ttfb_ms or load_ms,
@@ -137,20 +152,33 @@ class SiteCrawler:
                 "title": title,
             }
 
-            logger.info(f"Playwright done. html_rendered={len(content)} load_ms={load_ms} title={title}")
+            logger.info(
+                f"Crawl stage=playwright url={url} "
+                f"elapsed={playwright_elapsed:.1f}s "
+                f"html_rendered={len(content)} load_ms={load_ms} title={title}"
+            )
 
+        except asyncio.TimeoutError:
+            logger.error(f"Crawl stage=playwright url={url} elapsed={time.time()-playwright_start:.1f}s error=timeout")
+            crawl_data["error"] = "Playwright: timeout"
+            if crawl_data["html_static"]:
+                crawl_data["html_rendered"] = crawl_data["html_static"]
+                logger.info(f"Crawl stage=playwright url={url} fallback=static_html ({len(crawl_data['html_static'])} chars)")
         except Exception as e:
-            logger.error(f"Playwright failed: {type(e).__name__}: {str(e)}")
+            logger.error(f"Crawl stage=playwright url={url} elapsed={time.time()-playwright_start:.1f}s error={type(e).__name__}: {e}")
             crawl_data["error"] = f"Playwright: {str(e)}"
             # Fallback: use static HTML for schema/meta checks
             if crawl_data["html_static"]:
                 crawl_data["html_rendered"] = crawl_data["html_static"]
-                logger.info(f"Fallback: using html_static ({len(crawl_data['html_static'])} chars) as html_rendered")
+                logger.info(f"Crawl stage=playwright url={url} fallback=static_html ({len(crawl_data['html_static'])} chars)")
 
-        crawl_data["crawl_ms"] = int((time.time() - start) * 1000)
+        total_elapsed = time.time() - crawl_start
+        crawl_data["crawl_ms"] = int(total_elapsed * 1000)
 
         logger.info(
-            f"crawl() returning: html_static={len(crawl_data['html_static'])} "
+            f"Crawl complete url={url} "
+            f"total={total_elapsed:.1f}s "
+            f"html_static={len(crawl_data['html_static'])} "
             f"html_rendered={len(crawl_data['html_rendered'])} "
             f"error={crawl_data['error']}"
         )

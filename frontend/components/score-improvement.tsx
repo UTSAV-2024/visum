@@ -61,7 +61,7 @@ export function ScoreImprovement({ score, checks }: { score: number; checks: Che
   return (
     <section aria-label="Before vs after simulation" className="mt-8">
       <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-foreground mb-5">Before vs After Simulation</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-5">Your Improvement Potential</h2>
 
         {/* Score comparison */}
         <div className="flex items-center justify-center gap-3 sm:gap-5">
@@ -129,7 +129,7 @@ export function ScoreImprovement({ score, checks }: { score: number; checks: Che
         {/* Potential Improvements list */}
         <div className="mt-5 pt-4 border-t border-border">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-            Potential Improvements
+            What to Fix (Highest Impact First)
           </h3>
           <div className="flex flex-col gap-1.5">
             {gains.map((g) => (
@@ -147,10 +147,8 @@ export function ScoreImprovement({ score, checks }: { score: number; checks: Che
         </div>
 
         <p className="mt-3 text-[11px] text-muted-foreground/60 text-center leading-relaxed">
-          Fixing issues shown above could move you from{" "}
-          <strong className="text-foreground/80">{currentBand.label}</strong> to{" "}
-          <strong className="text-foreground/80">{projectedBand.label}</strong>.
-          Projected score assumes all issues are fully resolved. Actual results may vary.
+          Estimated improvement if the issues above are addressed.{" "}
+          Results depend on implementation quality and site complexity.
         </p>
       </div>
     </section>

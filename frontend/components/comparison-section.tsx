@@ -64,14 +64,13 @@ export function ComparisonSection() {
           {/* Header */}
           <div className="text-center mb-12">
             <div className="inline-flex rounded-full bg-accent/10 px-3 py-1 text-xs text-accent mb-4">
-              Why Visum?
+              Why Visum Is Different
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground text-balance">
-              Not Another Visibility Tool
+              Visum vs. Traditional SEO Tools
             </h2>
             <p className="mt-3 text-base leading-relaxed text-muted-foreground max-w-lg mx-auto">
-              Most AI visibility tools tell you what&rsquo;s wrong. Visum helps you understand and
-              fix it.
+              SEO tools measure rankings. Visum measures whether AI systems can read your site.
             </p>
           </div>
 
@@ -83,7 +82,7 @@ export function ComparisonSection() {
                 Capability
               </div>
               <div className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Traditional GEO Tools
+                Traditional SEO Tools
               </div>
               <div className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-accent">
                 Visum

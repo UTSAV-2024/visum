@@ -12,13 +12,12 @@ export function BenchmarkSection() {
     <section id="benchmarks" className="py-24 bg-secondary/10">
       <Container>
         <div className="mx-auto max-w-2xl text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-wide text-accent">Real-world benchmarks</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-accent">Reference Scores</p>
           <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            How Popular Sites Score
+            How Sample Sites Score
           </h2>
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-            See how well-known websites perform on AI agent readiness. These are reference scores
-            based on public scans.
+            Reference examples only. Scan your site for an accurate result.
           </p>
         </div>
 
@@ -46,19 +45,8 @@ export function BenchmarkSection() {
               ))}
             </div>
 
-            {/* Divider with note */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-card px-3 text-xs text-muted-foreground">Placeholder benchmarks</span>
-              </div>
-            </div>
-
             <p className="text-center text-xs text-muted-foreground/60">
-              Scores are approximate and will be updated with live data. Scan your site to get an accurate
-              measurement.
+              Reference scores — scan your site to compare.
             </p>
           </div>
         </div>

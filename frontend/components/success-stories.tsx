@@ -55,9 +55,9 @@ export function SuccessStories() {
   return (
     <section aria-label="Success stories" className="mt-10">
       <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-        <h2 className="text-sm font-semibold text-foreground mb-1">Success Stories</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-1">Example Scenarios</h2>
         <p className="text-xs text-muted-foreground mb-5">
-          See how other sites improved their AI readiness by addressing the same issues.
+          Hypothetical examples showing how fixing specific issues can improve a score. Not real customer data.
         </p>
 
         {/* Stories grid */}
@@ -78,8 +78,8 @@ export function SuccessStories() {
                     <h3 className="text-sm font-semibold text-foreground">{story.name}</h3>
                     <span className="text-[10px] text-muted-foreground">{story.type}</span>
                   </div>
-                  <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold text-green-500 whitespace-nowrap">
-                    Demo
+                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent whitespace-nowrap">
+                    Example
                   </span>
                 </div>
 
@@ -137,7 +137,7 @@ export function SuccessStories() {
 
         {/* Disclaimer */}
         <p className="mt-4 text-[10px] text-muted-foreground/50 text-center">
-          These are <strong>illustrative examples</strong> showing potential outcomes. They are not real customer results. Individual results vary.
+          These are <strong>hypothetical examples</strong>. Not real customer data. Scan your site for a personalized result.
         </p>
       </div>
     </section>

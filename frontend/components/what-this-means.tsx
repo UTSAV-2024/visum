@@ -3,10 +3,10 @@ import { getBand } from "../lib/scan-data";
 
 // ── Score interpretation text (aligned with backend band thresholds) ─
 function getInterpretation(score) {
-  if (score >= 85) return "Your site is well-prepared for AI agents and positioned to maximize AI visibility.";
-  if (score >= 65) return "Your site is partially accessible to AI systems, but several improvements could significantly increase visibility.";
-  if (score >= 40) return "AI systems can discover your site, but major visibility issues reduce the likelihood of citations and recommendations.";
-  return "Most AI agents cannot properly access, understand, or interact with your site.";
+  if (score >= 85) return "Your site is readable and understandable by most AI systems. You're well-positioned for AI-driven discovery.";
+  if (score >= 65) return "AI systems can partially read your site, but key gaps limit how often you're cited in AI responses.";
+  if (score >= 40) return "AI systems struggle to fully understand your site. Missing structure and permissions reduce your chances of appearing in AI answers.";
+  return "Most AI systems cannot properly access or understand your site. You're likely invisible in AI search results.";
 }
 
 // ── SWOT-aware summary ──────────────────────────────────────────────
@@ -66,7 +66,7 @@ export function WhatThisMeans({ score, checks }) {
     <div className="mt-8 rounded-xl border border-border bg-card p-6 sm:p-8">
       {/* Header + visual band (uses backend-aligned getBand from scan-data) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <h2 className="text-lg sm:text-xl font-bold text-foreground">What This Means</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-foreground">What Your Score Means</h2>
         <span className={cn("self-start rounded-full px-4 py-1 text-xs font-semibold tracking-wide", band.pill)}>
           {band.label}
         </span>

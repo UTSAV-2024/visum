@@ -3,18 +3,18 @@ import { Container } from "./container";
 const stats = [
   {
     value: "8",
-    label: "Visibility checks",
-    detail: "Focused diagnostics from structured data to agent interaction readiness, scored in seconds.",
+    label: "Technical Checks",
+    detail: "robots.txt, JSON-LD, metadata, sitemap, page speed, JavaScript rendering, llms.txt, and MCP endpoint.",
   },
   {
-    value: "~20s",
-    label: "Scan duration",
-    detail: "Most scans complete in under 20 seconds, including JavaScript rendering and performance measurement.",
+    value: "20s",
+    label: "Scan Duration",
+    detail: "Average scan time across all site types, including JavaScript rendering and performance measurement.",
   },
   {
-    value: "Free",
-    label: "No signup required",
-    detail: "Enter any public URL and get a full AI readiness report instantly — no account needed.",
+    value: "0",
+    label: "Cost to Start",
+    detail: "No account, no credit card, no email. Just paste your URL and see your results.",
   },
 ];
 

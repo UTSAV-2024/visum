@@ -114,7 +114,7 @@ class TestMetricContracts:
         """band must accept valid band strings."""
         contract = MetricInventory.get("band")
         assert contract is not None
-        for band in ["Agent-Ready", "Partially Visible", "Mostly Invisible", "Agent-Invisible"]:
+        for band in ["Excellent — AI Optimized", "Good — Needs Work", "Warning — Visibility Gaps", "Critical — Invisible to AI"]:
             result = contract.validate(band)
             assert result.status == ValidationStatus.PASSED, f"Failed for band: {band}"
 
@@ -308,7 +308,7 @@ class TestMetricValidator:
         ]
         result = MetricValidator.validate_scan_result(
             total_score=10,
-            band="Agent-Invisible",
+            band="Critical — Invisible to AI",
             checks=checks,
         )
         assert "total_score" in result
@@ -383,7 +383,7 @@ class TestValidationIntegration:
 
         result = validate_scan_results(
             total_score=25,
-            band="Agent-Invisible",
+            band="Critical — Invisible to AI",
             checks=checks,
             scan_confidence=75,
             projected_score=70,

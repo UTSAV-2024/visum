@@ -53,7 +53,7 @@ def _is_non_negative(value: Any) -> bool:
 
 
 def _is_valid_band(value: Any) -> bool:
-    valid_bands = {"Agent-Ready", "Partially Visible", "Mostly Invisible", "Agent-Invisible"}
+    valid_bands = {"Excellent — AI Optimized", "Good — Needs Work", "Warning — Visibility Gaps", "Critical — Invisible to AI"}
     return _is_str(value) and value in valid_bands
 
 
@@ -141,7 +141,7 @@ def _register_contracts() -> None:
                 description="Band must be one of the valid readiness levels",
                 severity=ValidationSeverity.BLOCKING,
                 validate_fn=_is_valid_band,
-                failure_message="Band must be one of: Agent-Ready, Partially Visible, Mostly Invisible, Agent-Invisible",
+                failure_message="Band must be one of: Excellent — AI Optimized, Good — Needs Work, Warning — Visibility Gaps, Critical — Invisible to AI",
             ),
             ValidationRule(
                 name="band_is_string",

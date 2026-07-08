@@ -50,7 +50,7 @@ export function ScoreHero({ score, url, scanTimeMs }) {
           >
             {score}
           </span>
-          <div className="text-xs text-muted-foreground mt-1">/ 100</div>
+          <div className="text-xs text-muted-foreground mt-1">out of 100</div>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export function ScoreHero({ score, url, scanTimeMs }) {
 
       {scanTimeMs != null && (
         <p className="text-xs text-muted-foreground/60">
-          Scanned in {(scanTimeMs / 1000).toFixed(1)}s
+          Ready in {Math.round(scanTimeMs / 1000)}s
         </p>
       )}
     </section>

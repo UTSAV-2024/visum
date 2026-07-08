@@ -19,7 +19,7 @@ import { RadarChart } from "../components/radar-chart";
 import { DoNothingConsequences } from "../components/do-nothing-consequences";
 import { SuccessStories } from "../components/success-stories";
 import { ExecutiveSummary } from "../components/executive-summary";
-import { track } from "../lib/posthog";
+import { track, getScoreBucket } from "../lib/analytics";
 
 /**
  * State for the result page.
@@ -59,6 +59,137 @@ function ErrorState({ message }) {
   );
 }
 
+function EmailCapture({ result }) {
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError("Enter your email.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    setError("");
+    setSaving(true);
+
+    try {
+      const saveResponse = await fetch("/api/save-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scan_id: result.scan_id || crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          url: result.url,
+          email: trimmed,
+          total_score: result.total_score,
+          band: result.band,
+          checks: result.checks,
+          scan_time_ms: result.scan_time_ms || 0,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error("Failed to save");
+      }
+
+      setSaved(true);
+      track("email_captured", {
+        url: result.url,
+        score: result.total_score,
+        source: "result_page_optional",
+      });
+    } catch (err) {
+      track("email_capture_failed", {
+        url: result.url,
+        error: err.message,
+      });
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (saved) {
+    return (
+      <div className="mt-10 rounded-xl border border-border bg-card p-6 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 mb-3">
+          <svg className="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <h3 className="text-base font-bold text-foreground">Report Saved</h3>
+        <p className="text-sm text-muted-foreground mt-1">We'll send your report and future monitoring updates to your email.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-10 rounded-xl border border-border bg-card p-6">
+      <div className="flex flex-col sm:flex-row gap-6 items-start">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold text-foreground">Save Your Report</h3>
+          <p className="text-sm text-muted-foreground mt-1">Get premium features — free.</p>
+          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+            {[
+              { icon: "save", text: "Save this report" },
+              { icon: "bell", text: "Weekly monitoring" },
+              { icon: "download", text: "PDF export" },
+              { icon: "history", text: "Scan history" },
+            ].map((item) => (
+              <li key={item.text} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <svg className="h-3.5 w-3.5 shrink-0 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                </svg>
+                {item.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col sm:flex-row gap-2 sm:items-start w-full sm:w-auto shrink-0">
+          <div>
+            <label htmlFor="save-email" className="sr-only">Email address</label>
+            <input
+              id="save-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
+              placeholder="you@example.com"
+              disabled={saving}
+              className="h-10 w-full sm:w-56 rounded-lg border border-border bg-secondary/50 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+              aria-describedby={error ? "save-email-error" : undefined}
+              aria-invalid={!!error}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={saving || !email.trim()}
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap shrink-0"
+          >
+            {saving ? (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            ) : (
+              "Save"
+            )}
+          </button>
+          {error && (
+            <p id="save-email-error" className="w-full text-sm font-medium text-destructive" role="alert">{error}</p>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+}
+
+
 export default function Result() {
   const router = useRouter();
   // Always start with loading — identical on server and client, so hydration matches
@@ -66,6 +197,7 @@ export default function Result() {
   const [copied, setCopied] = useState(false);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showFullReport, setShowFullReport] = useState(false);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -84,12 +216,6 @@ export default function Result() {
   useEffect(() => {
     const id = setTimeout(() => {
       try {
-        const emailSubmitted = sessionStorage.getItem("visum_email");
-        if (!emailSubmitted) {
-          setState({ type: "redirect-email" });
-          return;
-        }
-
         const stored = sessionStorage.getItem("visum_result");
         if (!stored) {
           setState({ type: "redirect" });
@@ -116,20 +242,18 @@ export default function Result() {
       router.replace("/");
       return;
     }
-    if (state.type === "redirect-email") {
-      router.replace("/email-gate");
-      return;
-    }
     if (state.type === "loaded") {
+      const r = state.data.result;
       track("result_viewed", {
-        score: state.data.result.total_score,
-        band: state.data.result.band,
-        url: state.data.result.url,
+        score: r.total_score,
+        band: r.band,
+        url: r.url,
+        score_bucket: getScoreBucket(r.total_score),
       });
     }
   }, [state, router]);
 
-  if (state.type === "redirect" || state.type === "redirect-email" || state.type === "loading") return null;
+  if (state.type === "redirect" || state.type === "loading") return null;
   if (state.type === "error") {
     return <ErrorState message={state.message} />;
   }
@@ -389,91 +513,18 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {/* ── PRIMARY SECTION: Always visible ── */}
+
         {/* 1. Score Hero */}
         <ScoreHero score={result.total_score} url={result.url} scanTimeMs={result.scan_time_ms} />
 
         {/* 2. Executive Summary */}
         <ExecutiveSummary score={result.total_score} checks={result.checks} />
 
-        {/* 3. Scan Confidence */}
-        <ScanConfidence checks={result.checks} />
-
-        {/* 4. Score Card */}
-        <div className="mt-8">
-          <ScoreCard
-            score={result.total_score}
-            band={result.band}
-            message={result.band_message}
-          />
-        </div>
-
-        {/* 5. Score Improvement */}
-        <ScoreImprovement score={result.total_score} checks={result.checks} />
-
-        {/* 6. Industry Benchmarking */}
-        <IndustryBenchmarking score={result.total_score} />
-
-        {/* 7. AI Readiness Radar */}
-        <RadarChart checks={result.checks} />
-
-        {/* 8. AI Agent Compatibility */}
-        <AiAgentCompatibility checks={result.checks} />
-
-        {/* 9. What This Means */}
-        <WhatThisMeans score={result.total_score} checks={result.checks} />
-
-        {/* 10. AI Visibility Summary */}
-        <AIVisibilitySummary checks={result.checks} />
-
-        {/* 11. AI Visibility Journey */}
-        <AIVisibilityJourney checks={result.checks} />
-
-        {/* 12. What Happens If You Do Nothing */}
-        <DoNothingConsequences checks={result.checks} />
-
-        {/* 13. Priority Fix Roadmap */}
+        {/* 3. Top Priority Fixes (shown early — most actionable) */}
         <PriorityFixRoadmap checks={result.checks} />
 
-        {/* 14. Success Stories */}
-        <SuccessStories />
-
-        {/* 15. Why AI Agents Skip Your Site */}
-        <h2 className="text-lg sm:text-xl font-bold text-foreground mb-5">
-          Why AI Agents Skip Your Site
-        </h2>
-
-        {/* 16. Check Cards */}
-        <div className="flex flex-col gap-4">
-          {result.checks.map((check, i) => (
-            <CheckCard key={`card-${i}`} check={check} />
-          ))}
-        </div>
-
-        {/* 17. Compact view */}
-        <details className="mt-8 group">
-          <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
-            <svg
-              className="size-4 transition-transform group-open:rotate-90"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Compact view ({result.checks.length} checks)
-          </summary>
-          <div className="mt-4 flex flex-col gap-3">
-            {result.checks.map((check, i) => (
-              <CheckItem key={`item-${i}`} check={check} />
-            ))}
-          </div>
-        </details>
-
-        {/* 18. Upgrade CTA (moved below all report content) */}
+        {/* 4. Upgrade CTA */}
         {result.total_score < 85 && (
           <div className="mt-10">
             {result.upgrade_cta ? (
@@ -484,7 +535,153 @@ ${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c
           </div>
         )}
 
-        {/* 19. Share & Download */}
+
+        {/* ── SECONDARY SECTION: Hidden behind toggle ── */}
+
+        {/* Toggle button */}
+        <div className="mt-10 text-center">
+          <button
+            onClick={() => setShowFullReport(!showFullReport)}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground hover:bg-secondary transition-colors cursor-pointer"
+            aria-expanded={showFullReport}
+          >
+            <svg
+              className={`h-4 w-4 transition-transform duration-200 ${showFullReport ? "rotate-90" : ""}`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+            </svg>
+            {showFullReport ? "Hide Full Report" : "View Full Report"}
+          </button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Score breakdown, AI analysis, check details, benchmarks, and more
+          </p>
+        </div>
+
+        {/* Collapsible full report */}
+        {showFullReport && (
+          <div className="mt-8 space-y-6">
+            {/* Group 1 — Score & Confidence */}
+            <details className="group rounded-xl border border-border bg-card overflow-hidden">
+              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" />
+                  </svg>
+                  Score &amp; Confidence
+                </span>
+                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </summary>
+              <div className="px-5 pb-5 space-y-6">
+                <ScoreCard
+                  score={result.total_score}
+                  band={result.band}
+                  message={result.band_message}
+                />
+                <ScanConfidence checks={result.checks} />
+                <WhatThisMeans score={result.total_score} checks={result.checks} />
+                <ScoreImprovement score={result.total_score} checks={result.checks} />
+              </div>
+            </details>
+
+            {/* Group 2 — AI Agent Analysis */}
+            <details className="group rounded-xl border border-border bg-card overflow-hidden">
+              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M10 1a4.5 4.5 0 00-4.5 4.5v2.5a2 2 0 00-2 2v4a2 2 0 002 2h9a2 2 0 002-2v-4a2 2 0 00-2-2v-2.5A4.5 4.5 0 0010 1zm-2.5 7V5.5a2.5 2.5 0 015 0V8h-5z" />
+                  </svg>
+                  AI Agent Analysis
+                </span>
+                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </summary>
+              <div className="px-5 pb-5 space-y-6">
+                <RadarChart checks={result.checks} />
+                <AiAgentCompatibility checks={result.checks} />
+                <AIVisibilitySummary checks={result.checks} />
+                <AIVisibilityJourney checks={result.checks} />
+                <DoNothingConsequences checks={result.checks} />
+              </div>
+            </details>
+
+            {/* Group 3 — All Check Details */}
+            <details className="group rounded-xl border border-border bg-card overflow-hidden">
+              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M16.403 4.652a3 3 0 00-4.242 0L4.5 12.31A3 3 0 003.72 14.5l-.824 2.473a.75.75 0 00.928.928l2.473-.824a3 3 0 002.19-.78l7.66-7.662a3 3 0 000-4.242l-.344-.343z" clipRule="evenodd" />
+                  </svg>
+                  All Check Details
+                </span>
+                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </summary>
+              <div className="px-5 pb-5 space-y-4">
+                <h3 className="text-sm font-bold text-foreground mt-4">Why AI Agents Skip Your Site</h3>
+                <div className="flex flex-col gap-4">
+                  {result.checks.map((check, i) => (
+                    <CheckCard key={`card-${i}`} check={check} />
+                  ))}
+                </div>
+                <details className="group mt-6">
+                  <summary className="cursor-pointer text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
+                    <svg
+                      className="size-3.5 transition-transform group-open:rotate-90"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Compact view ({result.checks.length} checks)
+                  </summary>
+                  <div className="mt-3 flex flex-col gap-3">
+                    {result.checks.map((check, i) => (
+                      <CheckItem key={`item-${i}`} check={check} />
+                    ))}
+                  </div>
+                </details>
+              </div>
+            </details>
+
+            {/* Group 4 — Benchmarks & Success Stories */}
+            <details className="group rounded-xl border border-border bg-card overflow-hidden">
+              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M1 2.75A.75.75 0 011.75 2h16.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h16.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zm0 5a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H1.75a.75.75 0 01-.75-.75zm0 5a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H1.75a.75.75 0 01-.75-.75z" clipRule="evenodd" />
+                  </svg>
+                  Benchmarks &amp; Success Stories
+                </span>
+                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </summary>
+              <div className="px-5 pb-5 space-y-6">
+                <IndustryBenchmarking score={result.total_score} />
+                <SuccessStories />
+              </div>
+            </details>
+          </div>
+        )}
+
+        {/* ── BOTTOM ACTIONS ── */}
+
+        {/* Optional email capture — Save Report / Premium features */}
+        <EmailCapture result={result} />
+
+        {/* Share & Download */}
         <div className="text-center pb-10">
           <div className="flex flex-wrap items-center justify-center gap-3">
             {/* Download Report — dropdown */}

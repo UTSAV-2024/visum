@@ -16,14 +16,14 @@ from .checks.speed     import check_speed
 logger = logging.getLogger(__name__)
 
 SCORE_BANDS = [
-    (85, "Agent-Ready",
-     "Your site is well-optimised for AI agents. You are ahead of 90% of non-Shopify sites."),
-    (65, "Partially Visible",
-     "AI agents can find you but cannot interact effectively. Key gaps in MCP and structured data."),
-    (40, "Mostly Invisible",
-     "Most AI agents will skip your site. This is costing you AI traffic that converts 42% better than search."),
-    (0,  "Agent-Invisible",
-     "AI agents cannot read or interact with your site. Your Shopify competitors are fully visible to agents."),
+    (85, "Excellent — AI Optimized",
+     "Your site is well-prepared for AI discovery. Most AI systems can find, read, and understand your content."),
+    (65, "Good — Needs Work",
+     "AI systems can partially discover you, but gaps in structure and permissions limit how often you're cited."),
+    (40, "Warning — Visibility Gaps",
+     "Most AI systems struggle to access or understand your site. You're likely missing AI-driven traffic opportunities."),
+    (0,  "Critical — Invisible to AI",
+     "AI systems cannot reliably access or understand your site. You're likely invisible in AI search results and chatbot answers."),
 ]
 
 
@@ -36,14 +36,14 @@ def get_band(score: int) -> tuple:
 
 def get_upgrade_cta(checks: list, score: int) -> str:
     if score < 40:
-        return "Visum Pro fixes all critical gaps - MCP server, schema, and AI monitoring in one click."
+        return "Visum Pro helps you fix the most critical gaps faster. Get automated fixes for MCP, structured data, and AI monitoring."
     mcp = next((c for c in checks if "MCP" in c.name), None)
     if mcp and mcp.score == 0:
-        return "Your biggest gap is the MCP endpoint. Visum Pro provisions a hosted MCP server for your site in minutes."
+        return "An MCP endpoint lets AI agents query your content directly. Visum Pro sets this up for you."
     schema = next((c for c in checks if "JSON-LD" in c.name), None)
     if schema and schema.score == 0:
-        return "No structured data found. Visum Pro auto-generates JSON-LD schema from your site content."
-    return "Upgrade to Visum Pro to add a hosted MCP server and weekly AI visibility monitoring."
+        return "Structured data helps AI systems understand your content. Visum Pro generates it from your existing pages."
+    return "Visum Pro gives you weekly AI visibility monitoring and automated fixes for recurring issues."
 
 
 async def run_scan(crawl_data: dict) -> ScanResult:

@@ -1,4 +1,9 @@
 # backend/tests/test_api.py
+import os
+
+# Disable rate limiting during tests — the default 10/hour blocks the test suite
+os.environ.setdefault("RATE_LIMIT_SCANS_PER_HOUR", "1000")
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -113,10 +118,10 @@ def test_scan_response_schema():
         assert isinstance(data["result"]["total_score"], int)
         assert 0 <= data["result"]["total_score"] <= 100
         assert data["result"]["band"] in [
-            "Agent-Ready",
-            "Partially Visible",
-            "Mostly Invisible",
-            "Agent-Invisible"
+            "Excellent — AI Optimized",
+            "Good — Needs Work",
+            "Warning — Visibility Gaps",
+            "Critical — Invisible to AI"
         ]
 
 

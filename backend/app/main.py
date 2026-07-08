@@ -81,7 +81,95 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Concurrency & Rate Limiting ──────────────────────────────────────
+# ── Global Scan Timeout ──────────────────────────────────────────────
+SCAN_TIMEOUT_SECONDS = int(os.getenv("SCAN_TIMEOUT_SECONDS", "45"))
+_start_time: float | None = None
+
+
+# ── Security Headers Middleware ──────────────────────────────────────
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to every response.
+    CSP is not set here — it's configured on the Next.js frontend."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
+
+
+# ── Env Validation ───────────────────────────────────────────────────
+
+
+def _validate_env_vars():
+    """Check for missing or misconfigured environment variables on startup.
+    Logs warnings but does not block startup (graceful degradation design)."""
+    # DATABASE_URL is optional — the app gracefully degrades without it.
+    if not os.getenv("DATABASE_URL"):
+        logger.warning(
+            "Missing environment variable: DATABASE_URL. "
+            "The database feature will be disabled. "
+            "See backend/.env.example for all available variables."
+        )
+
+    # Validate that integer vars parse correctly
+    int_vars = {
+        "MAX_CONCURRENT_SCANS": MAX_CONCURRENT_SCANS,
+        "SCAN_SEMAPHORE_WAIT_SECONDS": SCAN_SEMAPHORE_WAIT_SECONDS,
+        "MAX_SCAN_CACHE_SIZE": MAX_SCAN_CACHE_SIZE,
+        "SCAN_CACHE_TTL_SECONDS": SCAN_CACHE_TTL_SECONDS,
+        "CRAWLER_TIMEOUT_MS": CRAWLER_TIMEOUT_MS,
+    }
+    for name, val in int_vars.items():
+        if val < 0:
+            logger.warning(f"Environment variable {name} has a negative value ({val}). Using default.")
+
+
+# ── Rate Limiting ────────────────────────────────────────────────────
+RATE_LIMIT_MAX = int(os.getenv("RATE_LIMIT_SCANS_PER_HOUR", "30"))
+RATE_LIMIT_WINDOW_SECONDS = 3600  # 1 hour
+
+
+class IPRateLimiter:
+    """Simple in-memory IP-based rate limiter.
+    Not distributed — resets on server restart. Sufficient for beta launch."""
+
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._buckets: dict[str, list[float]] = {}
+
+    def _cleanup(self, ip: str, now: float):
+        """Remove timestamps outside the current window."""
+        cutoff = now - self.window_seconds
+        timestamps = self._buckets.get(ip, [])
+        self._buckets[ip] = [t for t in timestamps if t > cutoff]
+
+    def is_allowed(self, ip: str) -> bool:
+        """Return True if the request is allowed, False if rate-limited."""
+        now = time.time()
+        self._cleanup(ip, now)
+        timestamps = self._buckets.get(ip, [])
+        if len(timestamps) >= self.max_requests:
+            return False
+        self._buckets.setdefault(ip, []).append(now)
+        return True
+
+    def retry_after_seconds(self, ip: str) -> int:
+        """Return seconds until the rate limit resets for this IP."""
+        timestamps = self._buckets.get(ip, [])
+        if len(timestamps) < self.max_requests:
+            return 0
+        cutoff = time.time() - self.window_seconds
+        oldest = min(t for t in timestamps if t > cutoff)
+        return int(self.window_seconds - (time.time() - oldest))
+
+
+scan_rate_limiter = IPRateLimiter(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS)
+
+
+# ── Concurrency ──────────────────────────────────────────────────────
 MAX_CONCURRENT_SCANS = int(os.getenv("MAX_CONCURRENT_SCANS", "5"))
 SCAN_SEMAPHORE_WAIT_SECONDS = int(os.getenv("SCAN_SEMAPHORE_WAIT_SECONDS", "30"))
 MAX_SCAN_CACHE_SIZE = int(os.getenv("MAX_SCAN_CACHE_SIZE", "1000"))
@@ -176,10 +264,13 @@ async def ping_head():
 
 @app.get("/health")
 async def health():
+    db_status = "connected" if engine else "disabled"
     return {
         "status": "ok",
         "version": "0.1.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "database": db_status,
+        "uptime_s": int(time.time() - _start_time) if _start_time else None,
     }
 
 
@@ -212,8 +303,23 @@ async def get_scan_status(scan_id: str):
 
 
 @app.post("/scan", response_model=ScanResponse)
-async def scan(request: ScanRequest):
+async def scan(request: ScanRequest, fastapi_request: Request):
     """Crawl a URL and run all 8 checks. Returns ScanResponse with results."""
+    # ── Rate limiting check ──
+    client_ip = fastapi_request.client.host if fastapi_request.client else "unknown"
+    # Respect X-Forwarded-For if behind a proxy (Render, Vercel)
+    forwarded = fastapi_request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+
+    if not scan_rate_limiter.is_allowed(client_ip):
+        retry_after = scan_rate_limiter.retry_after_seconds(client_ip)
+        logger.info(f"Rate limit hit: IP={client_ip}, retry_after={retry_after}s")
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit exceeded. Please try again later.",
+            headers={"Retry-After": str(retry_after)},
+        )
     url = _validate_url(request.url)
     email=request.email
     scan_id = str(uuid.uuid4())
@@ -244,13 +350,22 @@ async def scan(request: ScanRequest):
 
         scan_tracker[scan_id]["status"] = ScanStatus.RUNNING
 
+        scan_start_time = time.time()
         try:
-            logger.info(f"[{scan_id}] Crawling...")
-            crawl_data = await crawler.crawl(url)
-            if crawl_data is None:
-                raise HTTPException(status_code=500, detail="Crawler returned None")
-            logger.info(f"[{scan_id}] Crawl done.")
-            result = await run_scan(crawl_data)
+            # ── Wrap the entire scan in a global timeout ──
+            async def _run_scan_pipeline():
+                logger.info(f"[{scan_id}] Crawling...")
+                crawl_data = await crawler.crawl(url)
+                if crawl_data is None:
+                    raise HTTPException(status_code=500, detail="Crawler returned None")
+                logger.info(f"[{scan_id}] Crawl done.")
+                result = await run_scan(crawl_data)
+                return result
+
+            result = await asyncio.wait_for(
+                _run_scan_pipeline(),
+                timeout=SCAN_TIMEOUT_SECONDS
+            )
             if engine:
                 try:
                     with engine.begin() as conn:
@@ -327,11 +442,12 @@ async def scan(request: ScanRequest):
         scan_tracker[scan_id]["completed_at"] = time.time()
         raise
     except asyncio.TimeoutError:
-        logger.error(f"[{scan_id}] Timeout during scan")
+        elapsed = time.time() - scan_start_time
+        logger.error(f"[{scan_id}] Global scan timeout after {elapsed:.1f}s (limit={SCAN_TIMEOUT_SECONDS}s) for {url}")
         scan_tracker[scan_id]["status"] = ScanStatus.FAILED
-        scan_tracker[scan_id]["error"] = "Scan timeout"
+        scan_tracker[scan_id]["error"] = f"Scan timed out after {elapsed:.0f}s"
         scan_tracker[scan_id]["completed_at"] = time.time()
-        raise HTTPException(status_code=408, detail="Scan timeout.")
+        raise HTTPException(status_code=408, detail="Scan timed out. Please try again.")
     except Exception as e:
         logger.error(f"[{scan_id}] Exception: {type(e).__name__}: {str(e)}", exc_info=True)
         scan_tracker[scan_id]["status"] = ScanStatus.FAILED
@@ -350,12 +466,25 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         logger.error(f"HTTP {status_code}: {detail}")
     elif status_code in (400, 422):
         logger.info(f"HTTP {status_code}: {detail}")
-    return JSONResponse(status_code=status_code, content={"detail": detail, "status_code": status_code})
+    return JSONResponse(
+        status_code=status_code,
+        content={"detail": detail, "status_code": status_code},
+        headers=exc.headers,  # pass through Retry-After and any other headers
+    )
 
 
 @app.on_event("startup")
 async def startup():
-    logger.info(f"Visum API starting: max_concurrent={MAX_CONCURRENT_SCANS}, cache_ttl={SCAN_CACHE_TTL_SECONDS}s, cache_max={MAX_SCAN_CACHE_SIZE}")
+    global _start_time
+    _start_time = time.time()
+    _validate_env_vars()
+    logger.info(
+        f"Visum API starting: max_concurrent={MAX_CONCURRENT_SCANS}, "
+        f"cache_ttl={SCAN_CACHE_TTL_SECONDS}s, cache_max={MAX_SCAN_CACHE_SIZE}, "
+        f"rate_limit={RATE_LIMIT_MAX}/hour, scan_timeout={SCAN_TIMEOUT_SECONDS}s"
+    )
+    logger.info(f"Database: {'connected' if engine else 'disabled'}")
+
 
 
 @app.on_event("shutdown")

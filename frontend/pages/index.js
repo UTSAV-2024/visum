@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { SiteHeader } from "../components/site-header";
 import { Hero } from "../components/hero";
+import { track } from "../lib/posthog";
 import { StatsStrip } from "../components/stats-strip";
 import { ChecksSection } from "../components/checks-section";
 import { SocialProof } from "../components/social-proof";
@@ -12,12 +14,19 @@ import { Container } from "../components/container";
 export default function Home() {
   const router = useRouter();
 
+  useEffect(() => {
+    track("landing_viewed", {
+      path: window.location.pathname,
+      referrer: document.referrer || "direct",
+    });
+  }, []);
+
   function handleScanStart() {
     // Optional pre-scan logic
   }
 
   function handleScanEnd(data) {
-    router.push("/email-gate");
+    router.push("/result");
   }
 
   return (
@@ -34,18 +43,17 @@ export default function Home() {
           <Container>
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                How it works
+                How the Scan Works
               </h2>
               <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-                Enter your URL, and we run 8 checks in under 30 seconds. You get a clear score
-                showing how AI agents see your site.
+                Paste your URL. We run 8 technical checks in about 20 seconds. You get a score, a diagnosis, and a fix list.
               </p>
             </div>
             <div className="mt-14 grid grid-cols-1 gap-8 sm:grid-cols-3">
               {[
-                { step: "01", title: "Enter your URL", desc: "Type in your website address — any platform works." },
-                { step: "02", title: "Automated scan", desc: "We run 8 AI readiness checks against your site in real time." },
-                { step: "03", title: "Get your report", desc: "Receive a detailed score with actionable fixes for each issue." },
+                { step: "01", title: "Paste Your Website Address", desc: "Enter your domain — Shopify, WordPress, Webflow, or any custom site." },
+                { step: "02", title: "8 AI Readiness Checks", desc: "We test your robots.txt, structured data, metadata, page speed, and more — across the signals AI systems use to discover content." },
+                { step: "03", title: "See Your AI Visibility Score", desc: "A clear 0–100 score, a list of what passed and failed, and step-by-step guidance to fix each issue." },
               ].map((item) => (
                 <div key={item.step} className="text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent font-bold text-lg">
@@ -72,33 +80,33 @@ export default function Home() {
             <div className="mx-auto max-w-3xl">
               <div className="text-center mb-12">
                 <div className="inline-flex self-center rounded-full bg-accent/10 px-3 py-1 text-xs text-accent mb-4">
-                  The Big Picture
+                  The Shift
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground text-balance">
-                  Why AI Visibility Matters Now
+                  The Rules of Discovery Just Changed
                 </h2>
                 <p className="mt-3 text-base leading-relaxed text-muted-foreground max-w-lg mx-auto">
-                  The way people find information is changing faster than most websites can keep up.
+                  People are asking ChatGPT instead of Google. But ChatGPT can only recommend sites it can read — and most sites aren't readable.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {[
                   {
-                    title: "AI-powered search is growing",
-                    desc: "ChatGPT, Perplexity, and Gemini now handle billions of queries. These systems cite and recommend websites — but only if they can read them.",
+                    title: "100M+ Daily AI Queries — And Growing",
+                    desc: "Every day, people ask ChatGPT, Perplexity, and Gemini to find answers. These systems cite websites in their responses — but only if the site is structured in a way AI can understand.",
                   },
                   {
-                    title: "Traditional SEO is not enough",
-                    desc: "Keyword optimization and backlinks do not guarantee AI visibility. AI agents require machine-readable structure, fast load times, and clear crawl permissions.",
+                    title: "60%+ of Sites Fail AI Readability Checks",
+                    desc: "Most websites are built for human eyes, not machine parsers. The most common problems: missing structured data, content trapped in JavaScript, and sitemaps that are outdated or missing entirely.",
                   },
                   {
-                    title: "Most sites are invisible to AI",
-                    desc: "Our scans show that over 60% of websites fail fundamental AI readability checks. Common issues include poor structured data, JavaScript-dependent content, and missing sitemaps.",
+                    title: "SEO Was Built for Humans. AI Reads Code.",
+                    desc: "Keywords and backlinks help people find you. But AI agents don't browse — they parse. They look at your robots.txt, your JSON-LD markup, your sitemap. If those are broken, you don't exist to AI.",
                   },
                   {
-                    title: "Early movers gain advantage",
-                    desc: "As AI-driven traffic grows, websites optimized for agent readiness will capture disproportionate visibility. Waiting means falling behind.",
+                    title: "The Window Is Still Open",
+                    desc: "AI-driven discovery is in its early stages. Most sites aren't optimized yet. The websites that fix their AI visibility now will capture traffic for years — while competitors remain invisible.",
                   },
                 ].map((item) => (
                   <div key={item.title} className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-accent/50">
@@ -106,6 +114,13 @@ export default function Home() {
                     <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Solution bridge */}
+              <div className="mt-10 text-center">
+                <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+                  These four shifts are why we built Visum — a tool that measures your site's AI readiness in 20 seconds and tells you exactly what to fix.
+                </p>
               </div>
             </div>
           </Container>

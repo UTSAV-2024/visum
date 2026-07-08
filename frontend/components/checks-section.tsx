@@ -2,36 +2,36 @@ import { Container } from "./container";
 
 const checks = [
   {
-    title: "LLM discoverability",
-    description: "Discover why AI systems cannot find or cite your content in chat responses.",
+    title: "AI Crawl Permissions",
+    description: "We check whether your robots.txt allows AI crawlers from ChatGPT, Claude, Perplexity, and Google to access your content.",
   },
   {
-    title: "Barrier detection",
-    description: "Find technical barriers that prevent ChatGPT, Claude, and Perplexity from accessing your pages.",
+    title: "Structured Data Validation",
+    description: "We verify that your JSON-LD markup contains complete, valid schema types that AI systems use to understand your products, articles, and organization.",
   },
   {
-    title: "Content readability",
-    description: "Check whether AI agents can extract meaning from your pages without JavaScript.",
+    title: "JavaScript-Free Content",
+    description: "We test whether your core content is visible in the raw HTML that AI crawlers receive — before any JavaScript executes.",
   },
   {
-    title: "Agent permissions",
-    description: "Reveal how your robots.txt and access rules are blocking AI crawlers.",
+    title: "Meta Tags & Open Graph",
+    description: "We scan your page titles, meta descriptions, and Open Graph tags — the metadata AI systems use when citing your site in search results and link previews.",
   },
   {
-    title: "AI metadata quality",
-    description: "See if your titles and Open Graph tags help or hurt your AI visibility.",
+    title: "Sitemap Health",
+    description: "We verify that your sitemap.xml exists, includes all your pages, and contains lastmod dates so AI crawlers can prioritize fresh content.",
   },
   {
-    title: "Speed impact",
-    description: "Understand how page speed affects whether AI agents wait for your content.",
+    title: "Page Speed & Timeout Risk",
+    description: "We measure your page load time and assess whether AI agents — which operate under strict 5–10 second timeouts — are likely to skip your content.",
   },
   {
-    title: "Agent interaction",
-    description: "Discover if AI agents can perform actions on your site or just read it.",
+    title: "MCP & API Accessibility",
+    description: "We check whether your site exposes endpoints that AI agents can query directly — enabling real-time access to your pricing, inventory, or content without web browsing.",
   },
   {
-    title: "Trust signals",
-    description: "Get clear actions to improve citations, authorship, and AI confidence in your site.",
+    title: "LLM Guidance (llms.txt)",
+    description: "We check for an llms.txt file — a standard that helps AI coding assistants and developer tools understand your project structure and documentation.",
   },
 ];
 
@@ -57,12 +57,12 @@ export function ChecksSection() {
     <section id="checks" className="py-24 bg-secondary/20">
       <Container>
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <p className="text-sm font-semibold uppercase tracking-wide text-accent">8 visibility checks</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-accent">What We Check</p>
           <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            Why AI Agents Ignore Your Site
+            The 8 Signals AI Systems Use to Evaluate Your Site
           </h2>
           <p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
-            We run eight focused checks to surface exactly what&rsquo;s blocking AI systems from finding, understanding, and citing your content.
+            Every check targets a specific technical factor that affects whether AI systems can find, read, and recommend your content.
           </p>
         </div>
 

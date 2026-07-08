@@ -57,19 +57,19 @@ function generateSummary(score: number, checks: Check[]): Summary {
   // ── Opening sentence (score-based) ──────────────────────────
   if (score >= 85) {
     sentences.push(
-      `Your website is well-prepared for AI visibility with a score of ${score}/100.`,
+      `Great shape. Score: ${score}/100. Minor tweaks recommended.`,
     );
   } else if (score >= 65) {
     sentences.push(
-      `Your website has a solid foundation for AI visibility, scoring ${score}/100, but there are clear opportunities to improve.`,
+      `Solid foundation. Score: ${score}/100. Several improvements available.`,
     );
   } else if (score >= 40) {
     sentences.push(
-      `Your website scores ${score}/100, indicating significant gaps in AI readiness that need attention.`,
+      `Significant gaps. Score: ${score}/100. Major improvements needed.`,
     );
   } else {
     sentences.push(
-      `Your website scores ${score}/100 — most AI visibility fundamentals are not yet in place.`,
+      `Critical issues. Score: ${score}/100. Most AI systems can't read your site.`,
     );
   }
 
@@ -79,7 +79,7 @@ function generateSummary(score: number, checks: Check[]): Summary {
     const strongList = strengths.slice(0, 2).join(" and ");
     const weakList = weaknesses.slice(0, 2).join(" and ");
     sentences.push(
-      `Your site is ${strongList}, but lacks ${weakList}.`,
+      `${strongList} present, but ${weakList} are missing.`,
     );
   } else if (strengths.length > 0 && weaknesses.length === 0) {
     sentences.push(
@@ -88,7 +88,7 @@ function generateSummary(score: number, checks: Check[]): Summary {
   } else if (strengths.length === 0) {
     const weakList = weaknesses.slice(0, 3).join(", ");
     sentences.push(
-      `Critical elements like ${weakList} are missing or insufficient.`,
+      `Critical: ${weakList} missing or insufficient.`,
     );
   }
 
@@ -96,11 +96,11 @@ function generateSummary(score: number, checks: Check[]): Summary {
   if (topFailures.length > 0) {
     if (topFailures.length === 1) {
       sentences.push(
-        `The single highest-impact improvement would be adding ${topFailures[0]}.`,
+        `Top fix: add ${topFailures[0]}.`,
       );
     } else {
       sentences.push(
-        `The biggest opportunities are ${topFailures.join(" and ")}.`,
+        `Top fixes: ${topFailures.join(" and ")}.`,
       );
     }
   }
@@ -110,20 +110,20 @@ function generateSummary(score: number, checks: Check[]): Summary {
     // Already excellent — minor tweaks
     if (partial.length > 0) {
       sentences.push(
-        `Fine-tuning the remaining partial checks could push your score even higher.`,
+        `Resolving partial checks could push your score higher.`,
       );
     }
   } else if (score >= 65) {
     sentences.push(
-      `Addressing these gaps will move your site from good to excellent AI visibility.`,
+      `Closing these gaps moves your site from good to excellent.`,
     );
   } else if (score >= 40) {
     sentences.push(
-      `Fixing these issues will significantly improve how AI systems discover and understand your content.`,
+      `Fixing these issues significantly improves how AI systems discover and understand your content.`,
     );
   } else {
     sentences.push(
-      `Prioritising the highest-impact fixes first will give you the fastest path to AI visibility.`,
+      `Start with the highest-impact fixes first for the fastest path to AI visibility.`,
     );
   }
 

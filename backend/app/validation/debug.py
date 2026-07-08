@@ -91,7 +91,7 @@ def build_debug_panel(
         },
         "formulas": {
             "total_score": "sum of all 8 check.scores (range: 0-100)",
-            "band": "threshold: >=85=Agent-Ready, >=65=Partially Visible, >=40=Mostly Invisible, <40=Agent-Invisible",
+            "band": "threshold: >=85=Excellent — AI Optimized, >=65=Good — Needs Work, >=40=Warning — Visibility Gaps, <40=Critical — Invisible to AI",
             "scan_confidence": "base=50 + robots_found(+12) + sitemap_found(+12) + speed_measured(+10) + rendered_content(+8) + static_content(+8) + meta_present(+5) + schema_found(+5), max=100",
             "projected_score": "min(total_score + sum(max_score - score for failed checks), 100)",
             "dimension_scores": "weighted sum of check scores mapped to 5 dimensions",

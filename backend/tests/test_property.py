@@ -32,13 +32,13 @@ def _random_score() -> int:
 def _random_band(score: int) -> str:
     """Generate the correct band for a given score (mirrors backend logic)."""
     if score >= 85:
-        return "Agent-Ready"
+        return "Excellent — AI Optimized"
     elif score >= 65:
-        return "Partially Visible"
+        return "Good — Needs Work"
     elif score >= 40:
-        return "Mostly Invisible"
+        return "Warning — Visibility Gaps"
     else:
-        return "Agent-Invisible"
+        return "Critical — Invisible to AI"
 
 
 def _random_check(pass_prob: float = 0.5) -> dict:
@@ -116,7 +116,7 @@ class TestScoreInvariants:
         """Band must always be one of the valid values."""
         random.seed(seed)
         result = _random_scan_result()
-        valid_bands = {"Agent-Ready", "Partially Visible", "Mostly Invisible", "Agent-Invisible"}
+        valid_bands = {"Excellent — AI Optimized", "Good — Needs Work", "Warning — Visibility Gaps", "Critical — Invisible to AI"}
 
         assert result["band"] in valid_bands, \
             f"Invalid band '{result['band']}' for score {result['total_score']} (seed {seed})"
@@ -130,13 +130,13 @@ class TestScoreInvariants:
         band = result["band"]
 
         if score >= 85:
-            assert band == "Agent-Ready", f"Score {score} should be Agent-Ready, got {band}"
+            assert band == "Excellent — AI Optimized", f"Score {score} should be Excellent — AI Optimized, got {band}"
         elif score >= 65:
-            assert band == "Partially Visible", f"Score {score} should be Partially Visible, got {band}"
+            assert band == "Good — Needs Work", f"Score {score} should be Good — Needs Work, got {band}"
         elif score >= 40:
-            assert band == "Mostly Invisible", f"Score {score} should be Mostly Invisible, got {band}"
+            assert band == "Warning — Visibility Gaps", f"Score {score} should be Warning — Visibility Gaps, got {band}"
         else:
-            assert band == "Agent-Invisible", f"Score {score} should be Agent-Invisible, got {band}"
+            assert band == "Critical — Invisible to AI", f"Score {score} should be Critical — Invisible to AI, got {band}"
 
     @pytest.mark.parametrize("seed", range(50))
     def test_projected_score_invariant(self, seed: int):
@@ -264,7 +264,7 @@ class TestEdgeCases:
         """Empty checks list must not crash validation."""
         result = validate_scan_results(
             total_score=0,
-            band="Agent-Invisible",
+            band="Critical — Invisible to AI",
             checks=[],
         )
         assert "verification" in result
@@ -284,30 +284,30 @@ class TestEdgeCases:
         assert result.has_evidence is False
 
     def test_boundary_score_84(self):
-        """Score 84 must be 'Mostly Invisible'."""
+        """Score 84 validates (within 0-100)."""
         contract = MetricInventory.get("total_score")
         assert contract is not None
         result = contract.validate(84)
         assert result.status == ValidationStatus.PASSED
 
     def test_boundary_score_85(self):
-        """Score 85 must be 'Agent-Ready' and valid."""
+        """Score 85 validates (within 0-100)."""
         contract = MetricInventory.get("total_score")
         assert contract is not None
         result = contract.validate(85)
         assert result.status == ValidationStatus.PASSED
 
     def test_boundary_band_at_85(self):
-        """Band for score 85 must be 'Agent-Ready'."""
+        """Band for score 85 must be 'Excellent — AI Optimized'."""
         band = _random_band(85)
-        assert band == "Agent-Ready"
+        assert band == "Excellent — AI Optimized"
 
     def test_boundary_band_at_64(self):
-        """Band for score 64 must be 'Mostly Invisible'."""
+        """Band for score 64 must be 'Warning — Visibility Gaps'."""
         band = _random_band(64)
-        assert band == "Mostly Invisible", f"Got {band}"
+        assert band == "Warning — Visibility Gaps", f"Got {band}"
 
     def test_boundary_band_at_65(self):
-        """Band for score 65 must be 'Partially Visible'."""
+        """Band for score 65 must be 'Good — Needs Work'."""
         band = _random_band(65)
-        assert band == "Partially Visible"
+        assert band == "Good — Needs Work"
