@@ -60,6 +60,10 @@ function ErrorState({ message }) {
 }
 
 function EmailCapture({ result }) {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
