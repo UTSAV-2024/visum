@@ -25,7 +25,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://visum-eight.vercel.app http://localhost:* https://*.vercel.app https://pagead2.googlesyndication.com",
+              "connect-src 'self' https://visum-eight.vercel.app https://visum-xoe3.onrender.com http://localhost:* https://*.vercel.app https://pagead2.googlesyndication.com",
               "frame-src 'self' https://pagead2.googlesyndication.com",
               "media-src 'self'",
               "object-src 'none'",
