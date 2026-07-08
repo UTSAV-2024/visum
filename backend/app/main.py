@@ -174,12 +174,13 @@ MAX_CONCURRENT_SCANS = int(os.getenv("MAX_CONCURRENT_SCANS", "5"))
 SCAN_SEMAPHORE_WAIT_SECONDS = int(os.getenv("SCAN_SEMAPHORE_WAIT_SECONDS", "30"))
 MAX_SCAN_CACHE_SIZE = int(os.getenv("MAX_SCAN_CACHE_SIZE", "1000"))
 SCAN_CACHE_TTL_SECONDS = int(os.getenv("SCAN_CACHE_TTL_SECONDS", "3600"))
+CRAWLER_TIMEOUT_MS = int(os.getenv("CRAWLER_TIMEOUT_MS", "60000"))
 
 scan_semaphore = asyncio.Semaphore(MAX_CONCURRENT_SCANS)
 scan_tracker: Dict[str, dict] = {}
 
 crawler = SiteCrawler(
-    timeout_ms=int(os.getenv("CRAWLER_TIMEOUT_MS", "60000"))
+    timeout_ms=CRAWLER_TIMEOUT_MS
 )
 
 
