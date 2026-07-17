@@ -1,56 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ScoreHero } from "../components/score-hero";
-import { CheckCard } from "../components/check-card";
-import CheckItem from "../components/CheckItem";
-import ScoreCard from "../components/ScoreCard";
-import { UpgradeCta } from "../components/upgrade-cta";
-import LegacyUpgradePrompt  from "../components/UpgradePrompt";
-import { AIVisibilitySummary } from "../components/ai-visibility-summary";
-import { AIVisibilityJourney } from "../components/ai-visibility-journey";
-import { PriorityFixRoadmap } from "../components/priority-fix-roadmap";
-import { ScoreImprovement } from "../components/score-improvement";
-import { WhatThisMeans } from "../components/what-this-means";
-import { AiAgentCompatibility } from "../components/ai-agent-compatibility";
-import { ScanConfidence } from "../components/scan-confidence";
-import { IndustryBenchmarking } from "../components/industry-benchmarking";
-import { RadarChart } from "../components/radar-chart";
-import { DoNothingConsequences } from "../components/do-nothing-consequences";
-import { SuccessStories } from "../components/success-stories";
-import { ExecutiveSummary } from "../components/executive-summary";
+import { ScanHeader } from "../components/scan-results/scan-header";
+import { ScoreSection } from "../components/scan-results/score-section";
+import { StatsStrip } from "../components/scan-results/stats-strip";
+import { TabGroup } from "../components/scan-results/tab-group";
+import { IssuesSection } from "../components/scan-results/issues-section";
+import { SectionGroup } from "../components/scan-results/section-group";
+import { ExplanationPanel } from "../components/scan-results/explanation-panel";
+import { Timeline } from "../components/scan-results/timeline";
+import { ScanResultsSkeleton } from "../components/scan-results/loading-skeleton";
+import { cn } from "../lib/utils";
 import { track, getScoreBucket } from "../lib/analytics";
 
-/**
- * State for the result page.
- * type === "loading" is the initial state on both server and client,
- * so hydration always matches (both render null).
- * sessionStorage is read inside a useEffect after hydration completes.
- */
+// ── Check categorization helpers ────────────────────────────────
+
+const PERFORMANCE_CHECKS = ["Page Load Speed"];
+const SEO_CHECKS = ["Meta Tags and Open Graph", "Sitemap.xml"];
+const AI_VISIBILITY_CHECKS = ["AI Bot Permissions (robots.txt)", "JSON-LD Structured Data", "llms.txt File", "MCP Endpoint", "JavaScript Rendering"];
+
+function categorizeChecks(checks) {
+  return {
+    performance: checks.filter((c) => PERFORMANCE_CHECKS.includes(c.name)),
+    seo: checks.filter((c) => SEO_CHECKS.includes(c.name)),
+    aiVisibility: checks.filter((c) => AI_VISIBILITY_CHECKS.includes(c.name)),
+  };
+}
+
+// ── Error State ─────────────────────────────────────────────────
 
 function ErrorState({ message }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="text-center max-w-md">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 mb-4">
-          <svg className="h-8 w-8 text-red-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-              clipRule="evenodd"
-            />
+          <svg className="h-8 w-8 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
           </svg>
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">Something went wrong</h2>
         <p className="text-sm text-muted-foreground mb-6">{message}</p>
-        <Link
-          href="/"
-          className="inline-block bg-primary text-primary-foreground font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-primary/90 transition-colors"
-        >
+        <Link href="/" className="inline-block bg-primary text-primary-foreground font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-primary/90 transition-colors no-underline">
           Try Again
         </Link>
         <div className="mt-4">
-          <Link href="/" className="text-sm text-accent hover:text-accent/80 font-medium">
+          <Link href="/" className="text-sm text-accent hover:text-accent/80 font-medium no-underline">
             Scan a new site
           </Link>
         </div>
@@ -58,6 +53,8 @@ function ErrorState({ message }) {
     </div>
   );
 }
+
+// ── Email Capture ───────────────────────────────────────────────
 
 function EmailCapture({ result }) {
   const [email, setEmail] = useState("");
@@ -68,49 +65,29 @@ function EmailCapture({ result }) {
   async function handleSubmit(e) {
     e.preventDefault();
     const trimmed = email.trim();
-    if (!trimmed) {
-      setError("Enter your email.");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmed)) {
+    if (!trimmed) { setError("Enter your email."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setError("Please enter a valid email address.");
       return;
     }
-
     setError("");
     setSaving(true);
-
     try {
-      const saveResponse = await fetch("/api/save-scan", {
+      const res = await fetch("/api/save-scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scan_id: result.scan_id || crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url: result.url,
-          email: trimmed,
-          total_score: result.total_score,
-          band: result.band,
+          url: result.url, email: trimmed,
+          total_score: result.total_score, band: result.band,
           checks: result.checks,
           scan_time_ms: result.scan_time_ms || 0,
         }),
       });
-
-      if (!saveResponse.ok) {
-        throw new Error("Failed to save");
-      }
-
+      if (!res.ok) throw new Error("Failed to save");
       setSaved(true);
-      track("email_captured", {
-        url: result.url,
-        score: result.total_score,
-        source: "result_page_optional",
-      });
-    } catch (err) {
-      track("email_capture_failed", {
-        url: result.url,
-        error: err.message,
-      });
+      track("email_captured", { url: result.url, score: result.total_score, source: "result_page" });
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
@@ -119,104 +96,81 @@ function EmailCapture({ result }) {
 
   if (saved) {
     return (
-      <div className="mt-10 rounded-xl border border-border bg-card p-6 text-center">
+      <div className="rounded-2xl border border-border bg-card p-6 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 mb-3">
-          <svg className="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <svg className="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
           </svg>
         </div>
         <h3 className="text-base font-bold text-foreground">Report Saved</h3>
-        <p className="text-sm text-muted-foreground mt-1">We'll send your report and future monitoring updates to your email.</p>
+        <p className="text-xs text-muted-foreground mt-1">We'll send your report and future monitoring updates to your email.</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-10 rounded-xl border border-border bg-card p-6">
-      <div className="flex flex-col sm:flex-row gap-6 items-start">
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex flex-col sm:flex-row gap-4 items-start">
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold text-foreground">Save Your Report</h3>
-          <p className="text-sm text-muted-foreground mt-1">Get premium features — free.</p>
-          <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-            {[
-              { icon: "save", text: "Save this report" },
-              { icon: "bell", text: "Weekly monitoring" },
-              { icon: "download", text: "PDF export" },
-              { icon: "history", text: "Scan history" },
-            ].map((item) => (
-              <li key={item.text} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <svg className="h-3.5 w-3.5 shrink-0 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                </svg>
-                {item.text}
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-sm font-bold text-foreground">Save Your Report</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Get premium features — free. Save reports, weekly monitoring, PDF export.</p>
         </div>
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col sm:flex-row gap-2 sm:items-start w-full sm:w-auto shrink-0">
-          <div>
-            <label htmlFor="save-email" className="sr-only">Email address</label>
-            <input
-              id="save-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
-              placeholder="you@example.com"
-              disabled={saving}
-              className="h-10 w-full sm:w-56 rounded-lg border border-border bg-secondary/50 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
-              aria-describedby={error ? "save-email-error" : undefined}
-              aria-invalid={!!error}
-            />
-          </div>
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto shrink-0">
+          <input
+            type="email" value={email}
+            onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
+            placeholder="you@example.com" disabled={saving}
+            className="h-9 w-full sm:w-48 rounded-lg border border-border bg-secondary/50 px-3 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent"
+            aria-invalid={!!error}
+          />
           <button
-            type="submit"
-            disabled={saving || !email.trim()}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap shrink-0"
+            type="submit" disabled={saving || !email.trim()}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:opacity-60"
           >
             {saving ? (
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-            ) : (
-              "Save"
-            )}
+            ) : "Save"}
           </button>
-          {error && (
-            <p id="save-email-error" className="w-full text-sm font-medium text-destructive" role="alert">{error}</p>
-          )}
+          {error && <p className="w-full text-xs font-medium text-destructive" role="alert">{error}</p>}
         </form>
       </div>
     </div>
   );
 }
 
+// ── Section icons ───────────────────────────────────────────────
+
+const SECTION_ICONS = {
+  performance: (
+    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
+    </svg>
+  ),
+  seo: (
+    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
+    </svg>
+  ),
+  aiVisibility: (
+    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 1a4.5 4.5 0 00-4.5 4.5v2.5a2 2 0 00-2 2v4a2 2 0 002 2h9a2 2 0 002-2v-4a2 2 0 00-2-2v-2.5A4.5 4.5 0 0010 1zm-2.5 7V5.5a2.5 2.5 0 015 0V8h-5z" />
+    </svg>
+  ),
+};
+
+// ── Main Page ───────────────────────────────────────────────────
 
 export default function Result() {
   const router = useRouter();
-  // Always start with loading — identical on server and client, so hydration matches
   const [state, setState] = useState({ type: "loading" });
+  const [activeTab, setActiveTab] = useState("issues");
   const [copied, setCopied] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showFullReport, setShowFullReport] = useState(false);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    function handleClick(e) {
-      if (!e.target.closest('[data-dropdown="download"]')) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
-  }, [dropdownOpen]);
-
-  // Read sessionStorage only on the client (after hydration is complete).
-  // Wrapped in setTimeout to satisfy react-hooks/set-state-in-effect lint rule.
+  // Read sessionStorage only on client
   useEffect(() => {
     const id = setTimeout(() => {
       try {
@@ -225,13 +179,11 @@ export default function Result() {
           setState({ type: "redirect" });
           return;
         }
-
         const parsed = JSON.parse(stored);
         if (!parsed.result || typeof parsed.result.total_score !== "number") {
           setState({ type: "error", message: "Invalid scan data received. Please scan again." });
           return;
         }
-
         setState({ type: "loaded", data: parsed });
       } catch {
         setState({ type: "error", message: "Failed to load scan results. Please scan again." });
@@ -240,29 +192,41 @@ export default function Result() {
     return () => clearTimeout(id);
   }, []);
 
-  // Side effects — redirects and tracking
+  // Side effects
   useEffect(() => {
     if (state.type === "redirect") {
       router.replace("/");
       return;
     }
     if (state.type === "loaded") {
-      const r = state.data.result;
       track("result_viewed", {
-        score: r.total_score,
-        band: r.band,
-        url: r.url,
-        score_bucket: getScoreBucket(r.total_score),
+        score: state.data.result.total_score,
+        band: state.data.result.band,
+        url: state.data.result.url,
+        score_bucket: getScoreBucket(state.data.result.total_score),
       });
     }
   }, [state, router]);
 
+  const handleScanAgain = useCallback(() => {
+    track("scan_again_clicked", { from: "result" });
+    router.push("/");
+  }, [router]);
+
   if (state.type === "redirect" || state.type === "loading") return null;
-  if (state.type === "error") {
-    return <ErrorState message={state.message} />;
-  }
+  if (state.type === "error") return <ErrorState message={state.message} />;
 
   const { result } = state.data;
+  const categories = categorizeChecks(result.checks);
+  const totalFailed = result.checks.filter((c) => !c.passed && !c.partial).length;
+  const totalWarnings = result.checks.filter((c) => c.partial).length;
+
+  const checkCounts = {
+    total: result.checks.length,
+    passed: result.checks.filter((c) => c.passed).length,
+    failed: totalFailed,
+    warnings: totalWarnings,
+  };
 
   function handleShare() {
     const text = `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness scanner. Is your site visible to ChatGPT and Claude? Check free at visum.io`;
@@ -272,500 +236,247 @@ export default function Result() {
     setTimeout(() => setCopied(false), 2500);
   }
 
-  function generateReportContent(format) {
-    const checks = result.checks;
-    const siteUrl = result.url;
-    const score = result.total_score;
-    const band = result.band;
-    const scanTime = result.scan_time_ms ? (result.scan_time_ms / 1000).toFixed(1) : "N/A";
-
-    const formatDate = () => new Date().toLocaleDateString("en-US", {
-      year: "numeric", month: "long", day: "numeric",
-    });
-
-    if (format === "md") {
-      return [
-        `# AI Readiness Report: ${siteUrl}`,
-        ``,
-        `**Date:** ${formatDate()}  `,
-        `**Score:** ${score}/100 — ${band}  `,
-        `**Scan Time:** ${scanTime}s  `,
-        ``,
-        `---`,
-        ``,
-        `## Score Breakdown`,
-        ``,
-        ...checks.map((c) => {
-          const status = c.passed ? "✅ PASS" : c.partial ? "⚠️ PART" : "❌ FAIL";
-          const pct = Math.round((c.score / c.max_score) * 100);
-          return [
-            `### ${c.name}`,
-            `- **Status:** ${status}`,
-            `- **Score:** ${c.score}/${c.max_score} (${pct}%)`,
-            c.finding ? `- **Finding:** ${c.finding}` : null,
-            !c.passed && c.fix ? `- **Recommendation:** ${c.fix}` : null,
-            ``,
-          ].filter(Boolean).join("\n");
-        }),
-        `---`,
-        ``,
-        `*Report generated by [Visum](https://visum.io) — AI Agent Readiness Scanner*`,
-        ``,
-      ].join("\n");
-    }
-
-    if (format === "doc") {
-      const rows = checks.map((c) => {
-        const status = c.passed ? "PASS" : c.partial ? "PART" : "FAIL";
-        const pct = Math.round((c.score / c.max_score) * 100);
-        return `<tr>
-          <td style="padding:8px 12px;border:1px solid #ddd;">${c.name}</td>
-          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;"><strong>${status}</strong></td>
-          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;">${c.score}/${c.max_score} (${pct}%)</td>
-          <td style="padding:8px 12px;border:1px solid #ddd;">${c.finding || "-"}</td>
-        </tr>`;
-      }).join("\n");
-
-      return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>AI Readiness Report - ${siteUrl}</title>
-<style>
-body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; color: #333; }
-h1 { color: #7c3aed; border-bottom: 2px solid #7c3aed; padding-bottom: 10px; }
-h2 { color: #444; margin-top: 30px; }
-.score { font-size: 48px; font-weight: bold; color: #7c3aed; }
-.badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 14px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th { background: #f5f3ff; padding: 10px 12px; border: 1px solid #ddd; text-align: left; font-weight: 600; }
-.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #888; }
-</style>
-</head>
-<body>
-<h1>AI Readiness Report</h1>
-<p><strong>Site:</strong> ${siteUrl}</p>
-<p><strong>Date:</strong> ${formatDate()}</p>
-<p><strong>Scan Time:</strong> ${scanTime}s</p>
-
-<div style="background:#f5f3ff;border-radius:12px;padding:20px;text-align:center;margin:20px 0;">
-  <div class="score">${score}<span style="font-size:18px;color:#888;">/100</span></div>
-  <div style="font-size:18px;font-weight:600;color:#7c3aed;margin-top:4px;">${band}</div>
-</div>
-
-<h2>Score Breakdown</h2>
-<table>
-<thead>
-<tr><th>Check</th><th>Status</th><th>Score</th><th>Finding</th></tr>
-</thead>
-<tbody>
-${rows}
-</tbody>
-</table>
-
-${checks.filter(c => !c.passed && c.fix).length > 0 ? `
-<h2>Recommendations</h2>
-<ul>
-${checks.filter(c => !c.passed && c.fix).map(c => `<li><strong>${c.name}:</strong> ${c.fix}</li>`).join("\n")}
-</ul>` : ""}
-
-<div class="footer">
-  Report generated by <a href="https://visum.io">Visum</a> — AI Agent Readiness Scanner
-</div>
-</body>
-</html>`;
-    }
-
-    // PDF — generate HTML optimized for print
-    const pdfChecks = checks.map((c) => {
-      const status = c.passed ? "PASS" : c.partial ? "PART" : "FAIL";
-      const pct = Math.round((c.score / c.max_score) * 100);
-      return `<tr>
-        <td style="padding:6px 10px;border:1px solid #ccc;">${c.name}</td>
-        <td style="padding:6px 10px;border:1px solid #ccc;text-align:center;"><strong>${status}</strong></td>
-        <td style="padding:6px 10px;border:1px solid #ccc;text-align:center;">${c.score}/${c.max_score}</td>
-        <td style="padding:6px 10px;border:1px solid #ccc;">${c.finding || "-"}</td>
-      </tr>`;
-    }).join("\n");
-
-    return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>AI Readiness Report - ${siteUrl}</title>
-<style>
-@media print { @page { margin: 20mm; } body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; } }
-body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-h1 { color: #7c3aed; border-bottom: 2px solid #7c3aed; padding-bottom: 8px; font-size: 24px; }
-.score { font-size: 42px; font-weight: bold; color: #7c3aed; text-align: center; }
-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
-th { background: #f0f0f0; padding: 8px 10px; border: 1px solid #ccc; text-align: left; }
-td { padding: 6px 10px; border: 1px solid #ccc; }
-.footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #888; text-align: center; }
-.badge { font-size: 16px; font-weight: 600; color: #7c3aed; text-align: center; margin-bottom: 20px; }
-.section-title { font-size: 18px; font-weight: bold; margin-top: 24px; margin-bottom: 8px; color: #444; }
-.meta { font-size: 13px; color: #666; margin-bottom: 4px; }
-.reco { margin: 4px 0; padding: 6px 10px; background: #fafafa; border-left: 3px solid #7c3aed; font-size: 13px; }
-</style>
-</head>
-<body>
-<h1>AI Readiness Report</h1>
-<p class="meta"><strong>Site:</strong> ${siteUrl}</p>
-<p class="meta"><strong>Date:</strong> ${formatDate()}</p>
-<p class="meta"><strong>Scan Time:</strong> ${scanTime}s</p>
-
-<div class="score">${score}<span style="font-size:16px;color:#888;"> / 100</span></div>
-<div class="badge">${band}</div>
-
-<div class="section-title">Score Breakdown</div>
-<table>
-<thead><tr><th>Check</th><th>Status</th><th>Score</th><th>Finding</th></tr></thead>
-<tbody>${pdfChecks}</tbody>
-</table>
-
-${checks.filter(c => !c.passed && c.fix).length > 0 ? `
-<div class="section-title">Recommendations</div>
-${checks.filter(c => !c.passed && c.fix).map(c => `<div class="reco"><strong>${c.name}:</strong> ${c.fix}</div>`).join("\n")}` : ""}
-
-<div class="footer">
-  Report generated by Visum — AI Agent Readiness Scanner (visum.io)
-</div>
-</body>
-</html>`;
-  }
-
-  function handleDownload(format) {
-    const content = generateReportContent(format);
-    const siteHostname = (() => {
-      try { return new URL(result.url).hostname; } catch { return "report"; }
-    })();
-    const filename = `visum-report-${siteHostname}-${Date.now()}`;
-    setDropdownOpen(false);
-
-    if (format === "pdf") {
-      // Open print-friendly view in a new window
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("Please allow pop-ups to download the PDF report.");
-        return;
-      }
-      printWindow.document.write(content);
-      printWindow.document.close();
-      printWindow.focus();
-      // Wait for fonts to load then print
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
-      track("report_downloaded", { format: "pdf", score: result.total_score });
-      return;
-    }
-
-    const mimeTypes = {
-      md: "text/markdown",
-      doc: "application/msword",
-    };
-    const ext = format === "doc" ? ".doc" : ".md";
-    const blob = new Blob([content], { type: mimeTypes[format] });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename + ext;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    track("report_downloaded", { format, score: result.total_score });
-  }
-
   function handleCopySummary() {
-    // Get top 3 failed/partial checks
-    const failingChecks = result.checks
-      .filter((c) => !c.passed)
-      .slice(0, 3);
-
+    const failing = result.checks.filter((c) => !c.passed).slice(0, 3);
     const summary = [
       `AI Readiness Score: ${result.total_score}`,
       `Band: ${result.band}`,
       `Top Issues:`,
-      ...failingChecks.map((c) => `* ${c.name}`),
+      ...failing.map((c) => `* ${c.name}`),
       "",
       "Generated by Visum",
     ].join("\n");
-
     navigator.clipboard.writeText(summary).catch(() => {});
     track("copy_summary_clicked", { score: result.total_score });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2500);
   }
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <div className="border-b border-border">
-        <nav className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16" aria-label="Results navigation">
-          <Link href="/" className="text-lg sm:text-xl font-extrabold text-foreground no-underline">
-            Visum
-          </Link>
-          <Link
-            href="/"
-            className="text-xs sm:text-sm text-muted-foreground border border-border rounded-lg px-4 py-2 bg-card hover:bg-secondary transition-colors no-underline"
-          >
-            Scan another site
-          </Link>
-        </nav>
-      </div>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "issues":
+        return <IssuesSection checks={result.checks} />;
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {/* ── PRIMARY SECTION: Always visible ── */}
-
-        {/* 1. Score Hero */}
-        <ScoreHero score={result.total_score} url={result.url} scanTimeMs={result.scan_time_ms} />
-
-        {/* 2. Executive Summary */}
-        <ExecutiveSummary score={result.total_score} checks={result.checks} />
-
-        {/* 3. Top Priority Fixes (shown early — most actionable) */}
-        <PriorityFixRoadmap checks={result.checks} />
-
-        {/* 4. Upgrade CTA */}
-        {result.total_score < 85 && (
-          <div className="mt-10">
-            {result.upgrade_cta ? (
-              <LegacyUpgradePrompt cta={result.upgrade_cta} />
-            ) : (
-              <UpgradeCta />
-            )}
+      case "checks":
+        return (
+          <div className="space-y-4">
+            <ExplanationPanel checkName={result.checks[0]?.name} className="lg:hidden" />
+            {result.checks.map((check, idx) => (
+              <SectionGroup
+                key={check.name}
+                title={check.name}
+                checks={[check]}
+                icon={<span className="text-[10px] font-mono font-bold">{idx + 1}</span>}
+              />
+            ))}
           </div>
-        )}
+        );
 
+      case "performance":
+        return (
+          <div className="space-y-4">
+            <SectionGroup title="Performance" checks={categories.performance} icon={SECTION_ICONS.performance} />
+            {categories.performance[0] && <ExplanationPanel checkName={categories.performance[0].name} />}
+            <Timeline scanTimeMs={result.scan_time_ms} />
+          </div>
+        );
 
-        {/* ── SECONDARY SECTION: Hidden behind toggle ── */}
+      case "seo":
+        return (
+          <div className="space-y-4">
+            <SectionGroup title="SEO" checks={categories.seo} icon={SECTION_ICONS.seo} />
+            {categories.seo.map((c) => (
+              <ExplanationPanel key={c.name} checkName={c.name} />
+            ))}
+          </div>
+        );
 
-        {/* Toggle button */}
-        <div className="mt-10 text-center">
-          <button
-            onClick={() => setShowFullReport(!showFullReport)}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground hover:bg-secondary transition-colors cursor-pointer"
-            aria-expanded={showFullReport}
-          >
-            <svg
-              className={`h-4 w-4 transition-transform duration-200 ${showFullReport ? "rotate-90" : ""}`}
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-            </svg>
-            {showFullReport ? "Hide Full Report" : "View Full Report"}
-          </button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Score breakdown, AI analysis, check details, benchmarks, and more
-          </p>
-        </div>
+      case "ai-visibility":
+        return (
+          <div className="space-y-4">
+            <SectionGroup title="AI Visibility" checks={categories.aiVisibility} icon={SECTION_ICONS.aiVisibility} />
+            {categories.aiVisibility.map((c) => (
+              <ExplanationPanel key={c.name} checkName={c.name} />
+            ))}
+          </div>
+        );
 
-        {/* Collapsible full report */}
-        {showFullReport && (
-          <div className="mt-8 space-y-6">
-            {/* Group 1 — Score & Confidence */}
-            <details className="group rounded-xl border border-border bg-card overflow-hidden">
-              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
-                <span className="flex items-center gap-2">
-                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" />
-                  </svg>
-                  Score &amp; Confidence
-                </span>
-                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+      default:
+        return <IssuesSection checks={result.checks} />;
+    }
+  };
+
+  return (
+    <>
+      <Head>
+        <title>Scan Results — Visum</title>
+        <meta name="description" content={`AI Readiness scan results for ${result.url}. Score: ${result.total_score}/100.`} />
+      </Head>
+
+      <div className="min-h-screen bg-background text-foreground">
+        {/* ── Header ────────────────────────────────────────────── */}
+        <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+          <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
+            <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-foreground no-underline">
+              <svg className="h-6 w-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              Visum
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link href="/" className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-all">
+                New Scan
+              </Link>
+              <button
+                onClick={handleScanAgain}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39l.001-.001zm-6.6.529a.75.75 0 00.84-1.242 5.5 5.5 0 019.747-2.099l.31.31h-2.434a.75.75 0 000 1.5h4.242a.75.75 0 00.75-.75v-4.242a.75.75 0 00-1.5 0v2.43l-.31-.31A7 7 0 008.712 11.95l.001.003z" clipRule="evenodd" />
                 </svg>
-              </summary>
-              <div className="px-5 pb-5 space-y-6">
-                <ScoreCard
-                  score={result.total_score}
-                  band={result.band}
-                  message={result.band_message}
-                />
-                <ScanConfidence checks={result.checks} />
-                <WhatThisMeans score={result.total_score} checks={result.checks} />
-                <ScoreImprovement score={result.total_score} checks={result.checks} />
-              </div>
-            </details>
+                Rescan
+              </button>
+            </div>
+          </div>
+        </header>
 
-            {/* Group 2 — AI Agent Analysis */}
-            <details className="group rounded-xl border border-border bg-card overflow-hidden">
-              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
-                <span className="flex items-center gap-2">
-                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path d="M10 1a4.5 4.5 0 00-4.5 4.5v2.5a2 2 0 00-2 2v4a2 2 0 002 2h9a2 2 0 002-2v-4a2 2 0 00-2-2v-2.5A4.5 4.5 0 0010 1zm-2.5 7V5.5a2.5 2.5 0 015 0V8h-5z" />
-                  </svg>
-                  AI Agent Analysis
-                </span>
-                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
-              </summary>
-              <div className="px-5 pb-5 space-y-6">
-                <RadarChart checks={result.checks} />
-                <AiAgentCompatibility checks={result.checks} />
-                <AIVisibilitySummary checks={result.checks} />
-                <AIVisibilityJourney checks={result.checks} />
-                <DoNothingConsequences checks={result.checks} />
-              </div>
-            </details>
+        {/* ── Main ──────────────────────────────────────────────── */}
+        <main className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
+          <div className="animate-fadeIn space-y-4 sm:space-y-6">
+            {/* Scan Header */}
+            <ScanHeader
+              url={result.url}
+              score={result.total_score}
+              scanTimeMs={result.scan_time_ms}
+              onScanAgain={handleScanAgain}
+            />
 
-            {/* Group 3 — All Check Details */}
-            <details className="group rounded-xl border border-border bg-card overflow-hidden">
-              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
-                <span className="flex items-center gap-2">
-                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M16.403 4.652a3 3 0 00-4.242 0L4.5 12.31A3 3 0 003.72 14.5l-.824 2.473a.75.75 0 00.928.928l2.473-.824a3 3 0 002.19-.78l7.66-7.662a3 3 0 000-4.242l-.344-.343z" clipRule="evenodd" />
+            {/* Score Section */}
+            <ScoreSection
+              score={result.total_score}
+              url={result.url}
+              checks={result.checks}
+            />
+
+            {/* Stats Strip */}
+            <StatsStrip checks={result.checks} />
+
+            {/* Tab Navigation */}
+            <TabGroup
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              checkCounts={checkCounts}
+              className="mt-2"
+            />
+
+            {/* Tab Content */}
+            <div className="min-h-[200px]">
+              {renderTabContent()}
+            </div>
+
+            {/* Passed Checks (collapsible) */}
+            {result.checks.filter((c) => c.passed).length > 0 && (
+              <details className="group rounded-2xl border border-border bg-card overflow-hidden">
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-3 text-sm font-semibold text-foreground list-none hover:bg-muted/10 transition-colors">
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                    </svg>
+                    Passed Checks ({result.checks.filter((c) => c.passed).length})
+                  </span>
+                  <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
                   </svg>
-                  All Check Details
-                </span>
-                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
-              </summary>
-              <div className="px-5 pb-5 space-y-4">
-                <h3 className="text-sm font-bold text-foreground mt-4">Why AI Agents Skip Your Site</h3>
-                <div className="flex flex-col gap-4">
-                  {result.checks.map((check, i) => (
-                    <CheckCard key={`card-${i}`} check={check} />
+                </summary>
+                <div className="px-5 pb-5 space-y-3">
+                  {result.checks.filter((c) => c.passed).map((check) => (
+                    <div key={check.name} className="flex items-center gap-3 rounded-xl bg-green-500/5 border border-green-500/10 px-4 py-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-500">
+                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-foreground">{check.name}</p>
+                        {check.finding && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{check.finding}</p>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
-                <details className="group mt-6">
-                  <summary className="cursor-pointer text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
-                    <svg
-                      className="size-3.5 transition-transform group-open:rotate-90"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Compact view ({result.checks.length} checks)
-                  </summary>
-                  <div className="mt-3 flex flex-col gap-3">
-                    {result.checks.map((check, i) => (
-                      <CheckItem key={`item-${i}`} check={check} />
-                    ))}
-                  </div>
-                </details>
-              </div>
-            </details>
+              </details>
+            )}
 
-            {/* Group 4 — Benchmarks & Success Stories */}
-            <details className="group rounded-xl border border-border bg-card overflow-hidden">
-              <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-semibold text-foreground list-none hover:bg-secondary/30 transition-colors">
-                <span className="flex items-center gap-2">
-                  <svg className="h-4 w-4 text-accent" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M1 2.75A.75.75 0 011.75 2h16.5a.75.75 0 010 1.5H1.75A.75.75 0 011 2.75zm0 5A.75.75 0 011.75 7h16.5a.75.75 0 010 1.5H1.75A.75.75 0 011 7.75zm0 5a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H1.75a.75.75 0 01-.75-.75zm0 5a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H1.75a.75.75 0 01-.75-.75z" clipRule="evenodd" />
-                  </svg>
-                  Benchmarks &amp; Success Stories
-                </span>
-                <svg className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
-              </summary>
-              <div className="px-5 pb-5 space-y-6">
-                <IndustryBenchmarking score={result.total_score} />
-                <SuccessStories />
-              </div>
-            </details>
-          </div>
-        )}
+            {/* Email capture */}
+            <EmailCapture result={result} />
 
-        {/* ── BOTTOM ACTIONS ── */}
-
-        {/* Optional email capture — Save Report / Premium features */}
-        <EmailCapture result={result} />
-
-        {/* Share & Download */}
-        <div className="text-center pb-10">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {/* Download Report — dropdown */}
-            <div className="relative" data-dropdown="download">
+            {/* Bottom actions */}
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pb-8">
+              {/* Download Report */}
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="inline-flex items-center gap-2 border border-border bg-card text-foreground font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
+                onClick={() => {
+                  track("report_downloaded", { format: "pdf", score: result.total_score });
+                  window.print();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/20 transition-all"
               >
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
                   <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
                 </svg>
-                Download Report
-                <svg className={`h-3 w-3 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
+                Download PDF
               </button>
-              {dropdownOpen && (
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 w-40 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
-                  {[
-                    { format: "pdf", label: "PDF", desc: "Printable report" },
-                    { format: "md", label: "Markdown (.md)", desc: "Plain text format" },
-                    { format: "doc", label: "Word (.doc)", desc: "Editable document" },
-                  ].map((item) => (
-                    <button
-                      key={item.format}
-                      onClick={() => handleDownload(item.format)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-xs hover:bg-secondary transition-colors border-0 bg-transparent cursor-pointer"
-                    >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent font-bold text-[10px]">
-                        {item.format.toUpperCase()}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-foreground">{item.label}</div>
-                        <div className="text-[10px] text-muted-foreground">{item.desc}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <button
+                onClick={handleCopySummary}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted/20 transition-all"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
+                  <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
+                </svg>
+                {copiedSummary ? "Copied!" : "Copy Summary"}
+              </button>
+              <button
+                onClick={handleShare}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-all"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .792l6.733 3.367a2.5 2.5 0 11-.671 1.341l-6.733-3.367a2.5 2.5 0 110-3.475l6.733-3.366A2.5 2.5 0 0113 4.5z" />
+                </svg>
+                {copied ? "Copied!" : "Share Score"}
+              </button>
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness Scanner. Is your site visible to ChatGPT and Claude?`
+                )}&url=${encodeURIComponent("https://visum-eight.vercel.app")}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={() => track("tweet_clicked", { score: result.total_score })}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#1DA1F2] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#1a8cd8] transition-all no-underline"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                Share on X
+              </a>
             </div>
-
-            <button
-              onClick={handleCopySummary}
-              className="inline-flex items-center gap-2 border border-border bg-card text-foreground font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
-                <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
-              </svg>
-              Copy Summary
-            </button>
-            <button
-              onClick={handleShare}
-              className="bg-primary text-primary-foreground font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              Share my score
-            </button>
-            <a
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness Scanner. Is your site visible to ChatGPT and Claude?`
-              )}&url=${encodeURIComponent("https://visum-eight.vercel.app")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track("tweet_clicked", { score: result.total_score })}
-              className="inline-flex items-center gap-2 bg-[#1DA1F2] text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-lg hover:bg-[#1a8cd8] transition-colors no-underline"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              Share on X
-            </a>
           </div>
-          {copied && (
-            <p className="mt-3 text-sm text-green-500 transition-all duration-300">
-              Copied to clipboard!
-            </p>
-          )}
-        </div>
+        </main>
+
+        {/* ── Footer ────────────────────────────────────────────── */}
+        <footer className="border-t border-border">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Visum — AI Visibility Platform</p>
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Home</Link>
+              <Link href="/dashboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
+              <Link href="/analytics" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Analytics</Link>
+              <Link href="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            </div>
+          </div>
+        </footer>
       </div>
-    </div>
+    </>
   );
 }

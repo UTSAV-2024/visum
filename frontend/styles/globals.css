@@ -144,6 +144,16 @@ body {
   background: hsl(var(--color-muted) / 0.5);
 }
 
+/* Scrollbar utilities */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Duration utilities */
 .duration-1500 {
   transition-duration: 1500ms;
