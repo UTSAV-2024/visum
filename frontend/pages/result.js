@@ -313,36 +313,9 @@ export default function Result() {
         <meta name="description" content={`AI Readiness scan results for ${result.url}. Score: ${result.total_score}/100.`} />
       </Head>
 
-      <div className="min-h-screen bg-background text-foreground">
-        {/* ── Header ────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-          <div className="mx-auto flex h-14 sm:h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-foreground no-underline">
-              <svg className="h-6 w-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              Visum
-            </Link>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link href="/" className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-all">
-                New Scan
-              </Link>
-              <button
-                onClick={handleScanAgain}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90"
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39l.001-.001zm-6.6.529a.75.75 0 00.84-1.242 5.5 5.5 0 019.747-2.099l.31.31h-2.434a.75.75 0 000 1.5h4.242a.75.75 0 00.75-.75v-4.242a.75.75 0 00-1.5 0v2.43l-.31-.31A7 7 0 008.712 11.95l.001.003z" clipRule="evenodd" />
-                </svg>
-                Rescan
-              </button>
-            </div>
-          </div>
-        </header>
-
+      <div>
         {/* ── Main ──────────────────────────────────────────────── */}
-        <main className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
           <div className="animate-fadeIn space-y-4 sm:space-y-6">
             {/* Scan Header */}
             <ScanHeader
@@ -462,20 +435,7 @@ export default function Result() {
               </a>
             </div>
           </div>
-        </main>
-
-        {/* ── Footer ────────────────────────────────────────────── */}
-        <footer className="border-t border-border">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Visum — AI Visibility Platform</p>
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-              <Link href="/dashboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
-              <Link href="/analytics" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Analytics</Link>
-              <Link href="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            </div>
-          </div>
-        </footer>
+        </div>
       </div>
     </>
   );

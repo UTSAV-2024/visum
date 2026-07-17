@@ -36,28 +36,8 @@ export default function TeamManagement() {
         <meta name="description" content="Manage your team, roles, permissions, and workspace settings." />
       </Head>
 
-      <div className="min-h-screen bg-background text-foreground">
-        <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-          <div className="mx-auto flex h-14 sm:h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-foreground no-underline">
-              <svg className="h-6 w-6 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
-              </svg>
-              Visum
-            </Link>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowInvite(!showInvite)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" />
-                </svg>
-                Invite
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
+      <div>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
           {loading ? (
             <TeamSkeleton />
           ) : (
@@ -120,20 +100,7 @@ export default function TeamManagement() {
               </div>
             </div>
           )}
-        </main>
-
-        <footer className="border-t border-border mt-8">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Visum</p>
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-              <Link href="/dashboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
-              <Link href="/analytics" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Analytics</Link>
-              <Link href="/reports" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Reports</Link>
-              <Link href="/competitors" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Competitors</Link>
-            </div>
-          </div>
-        </footer>
+        </div>
       </div>
     </>
   );
