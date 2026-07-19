@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { scanUrl } from "../lib/api";
 import { track, getScoreBucket } from "../lib/analytics";
 import { Container } from "./container";
+import { EASE_OUT_EXPO } from "./motion";
 
 const progressMessages = [
   { message: "Checking permissions...", pct: 15 },
@@ -12,74 +14,65 @@ const progressMessages = [
   { message: "Calculating score...", pct: 90 },
 ];
 
-const aiFacts = [
-  "Only 12% of websites pass all AI readability checks.",
-  "63% of AI search results link to sites with proper structured data.",
-  "Sites with llms.txt are 3x more likely to appear in AI answers.",
-  "AI search traffic grew 10x faster than traditional search this year.",
-  "Most AI crawlers time out after 5 seconds on slow pages.",
-  "70% of Shopify stores are missing critical structured data.",
+const exampleUrls = ["yourstore.com", "agencywebsite.com", "saasproduct.com"];
+
+/*
+  The machine's-eye view: what a crawler reads when it visits a page.
+  Typed out line by line like an instrument printing its findings.
+*/
+const crawlerLines = [
+  { text: "GET / HTTP/1.1", tone: "dim" },
+  { text: "200 OK · text/html · 84kb", tone: "dim" },
+  { text: "robots.txt ............ ALLOW", tone: "pass" },
+  { text: "json-ld ............... none", tone: "fail" },
+  { text: "llms.txt .............. 404", tone: "fail" },
+  { text: "meta/og ............... 4 of 6", tone: "warn" },
+  { text: "sitemap.xml ........... ok, 7 urls", tone: "pass" },
+  { text: "render check .......... js-locked", tone: "warn" },
+  { text: "verdict: partially readable", tone: "verdict" },
 ];
 
-const exampleUrls = [
-  "yourstore.com",
-  "agencywebsite.com",
-  "saasproduct.com",
-];
+const toneClass = {
+  dim: "text-muted-foreground/70",
+  pass: "text-pass",
+  warn: "text-warn",
+  fail: "text-fail",
+  verdict: "text-primary",
+};
 
-function HeroPreviewCard() {
-  const checks = [
-    { name: "AI Bot Permissions (robots.txt)", pass: true },
-    { name: "JSON-LD Structured Data", pass: true },
-    { name: "llms.txt File", pass: null },
-    { name: "MCP Endpoint", pass: null },
-    { name: "JavaScript Rendering", pass: null },
-    { name: "Meta Tags & Open Graph", pass: false },
-    { name: "Sitemap.xml", pass: false },
-    { name: "Page Load Speed", pass: false },
-  ];
+function MachineEyeView() {
+  const reduce = useReducedMotion();
+  const [visibleCount, setVisibleCount] = useState(reduce ? crawlerLines.length : 0);
+
+  useEffect(() => {
+    if (reduce) return;
+    if (visibleCount >= crawlerLines.length) return;
+    const t = setTimeout(
+      () => setVisibleCount((c) => c + 1),
+      visibleCount === 0 ? 900 : 380
+    );
+    return () => clearTimeout(t);
+  }, [visibleCount, reduce]);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">Your Report Preview</h3>
-        <span className="text-[10px] text-muted-foreground">8 checks</span>
+    <div className="scan-sweep relative overflow-hidden rounded-xl border border-border bg-card/80">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+        <span className="font-mono text-[11px] text-muted-foreground">
+          crawler://any-website.com
+        </span>
+        <span className="flex items-center gap-1.5 font-mono text-[11px] text-primary">
+          <span className="phosphor-pulse inline-block h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+          reading
+        </span>
       </div>
-      <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
-        <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-          <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted opacity-20" />
-            <circle cx="20" cy="20" r="17" fill="none" stroke="url(#hp-grad)" strokeWidth="2" strokeDasharray="48.1 58.7" />
-            <defs>
-              <linearGradient id="hp-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7c3aed" />
-                <stop offset="100%" stopColor="#3b82f6" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span className="absolute text-[10px] font-bold text-foreground">45</span>
-          <span className="absolute text-[6px] text-muted-foreground mt-4">/100</span>
-        </div>
-        <div className="text-left min-w-0">
-          <p className="text-xs font-medium text-foreground truncate">Poor — Major Issues Found</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">5 of 8 checks failed</p>
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        {checks.map((check) => (
-          <div key={check.name} className="flex items-center justify-between text-[10px]">
-            <span className="text-muted-foreground truncate mr-2">{check.name}</span>
-            <span
-              className={
-                check.pass === true
-                  ? "text-green-500 shrink-0"
-                  : check.pass === null
-                  ? "text-orange-500 shrink-0"
-                  : "text-red-500 shrink-0"
-              }
-            >
-              {check.pass === true ? "✓" : check.pass === null ? "⚠" : "✗"}
-            </span>
+      <div className="px-4 py-4 font-mono text-[12.5px] leading-[1.9]" aria-label="Example of how an AI crawler reads a website">
+        {crawlerLines.map((line, i) => (
+          <div
+            key={line.text}
+            className={`${toneClass[line.tone]} ${line.tone === "verdict" ? "mt-2 border-t border-border pt-2" : ""} transition-opacity duration-300`}
+            style={{ opacity: i < visibleCount ? 1 : 0 }}
+          >
+            {line.text}
           </div>
         ))}
       </div>
@@ -92,47 +85,29 @@ export function Hero({ onScanStart, onScanEnd }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [progressIndex, setProgressIndex] = useState(0);
-  const [factIndex, setFactIndex] = useState(0);
   const intervalRef = useRef(null);
-  const factIntervalRef = useRef(null);
+  const reduce = useReducedMotion();
 
-  // Rotate progress messages every 3.5 seconds while loading
   useEffect(() => {
-    // Clear any existing interval when loading state changes
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (factIntervalRef.current) {
-      clearInterval(factIntervalRef.current);
-      factIntervalRef.current = null;
-    }
-
     const id = setTimeout(() => {
       if (!loading) {
         setProgressIndex(0);
-        setFactIndex(0);
         return;
       }
       intervalRef.current = setInterval(() => {
         setProgressIndex((prev) => (prev + 1) % progressMessages.length);
       }, 3500);
-      factIntervalRef.current = setInterval(() => {
-        setFactIndex((prev) => (prev + 1) % aiFacts.length);
-      }, 5000);
     }, 0);
     return () => clearTimeout(id);
   }, [loading]);
 
-  // Clean up interval on unmount
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      if (factIntervalRef.current) {
-        clearInterval(factIntervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
@@ -153,7 +128,7 @@ export function Hero({ onScanStart, onScanEnd }) {
     try {
       parsed = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
     } catch {
-      setError("That doesn't look like a valid URL. Try \"yourstore.com.\"");
+      setError('That doesn\'t look like a valid URL. Try "yourstore.com."');
       return;
     }
 
@@ -178,118 +153,149 @@ export function Hero({ onScanStart, onScanEnd }) {
       // Store scan data directly — results page reads this immediately
       sessionStorage.setItem("visum_result", JSON.stringify(data));
     } catch (err) {
-      const message = err.message || "Scan failed. This site might be blocking our crawler. Try another URL.";
+      const message =
+        err.message || "Scan failed. This site might be blocking our crawler. Try another URL.";
       setError(message);
       const scanTimeMs = Math.round(performance.now() - scanStartTime);
       track("scan_error", { url: parsed.href, error: message, duration_ms: scanTimeMs });
-      track("scan_failed", {
-        url: parsed.href,
-        error: message,
-        duration_ms: scanTimeMs,
-      });
+      track("scan_failed", { url: parsed.href, error: message, duration_ms: scanTimeMs });
     } finally {
       setLoading(false);
     }
 
-    // Navigate to email gate outside try/catch — a navigation error must not mask a successful scan
+    // Navigate outside try/catch — a navigation error must not mask a successful scan
     if (data && onScanEnd) {
       onScanEnd(data);
     }
   }
 
+  const entrance = (delay) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 28 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.8, delay, ease: EASE_OUT_EXPO },
+        };
+
   return (
-    <section id="scan" className="relative bg-gradient-to-b from-background to-secondary/5 py-24">
-      {/* Grid background — pointer-events-none so it doesn't intercept clicks on the form/button */}
-      <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
-        <div className="h-full w-full" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)',
-          backgroundSize: '40px 40px'
-        }} />
-      </div>
+    <section id="scan" className="relative overflow-hidden py-20 sm:py-28">
+      {/* Phosphor grid backdrop — decorative only */}
+      <div className="instrument-grid absolute inset-0 pointer-events-none" aria-hidden="true" />
 
-      <Container>
-        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12 lg:gap-20 items-center">
-          {/* Left column: content — 60% */}
-          <div className="flex flex-col gap-6">
-            <div className="inline-flex self-start rounded-full bg-accent/10 px-3 py-1 text-xs text-accent">
-              AI Readiness Check
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-balance text-foreground leading-[1.1]">
-              Your Website Is Probably{" "}
-              <span className="text-accent">Invisible to AI.</span>
+      <Container className="relative">
+        <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-[7fr_5fr] lg:gap-20">
+          {/* Left: the claim + the scanner */}
+          <div className="flex flex-col gap-7">
+            <motion.h1
+              {...entrance(0)}
+              className="font-extrabold leading-[1.04] tracking-[-0.025em] text-foreground"
+              style={{ fontSize: "var(--text-display)" }}
+            >
+              AI reads your website.
               <br />
-              Here's Proof.
-            </h1>
+              <span className="text-primary">Badly, probably.</span>
+            </motion.h1>
 
-            <p className="text-base sm:text-lg leading-relaxed text-muted-foreground max-w-lg">
-              When ChatGPT, Google AI Mode, or Perplexity visits your site, can they actually understand what you offer? Most sites fail 4 out of 8 checks. Visum tells you exactly what's broken and how to fix it.
-            </p>
+            <motion.p
+              {...entrance(0.12)}
+              className="max-w-[58ch] text-base leading-relaxed text-muted-foreground sm:text-lg"
+            >
+              When ChatGPT or Perplexity visits your site, it doesn&apos;t see your design —
+              it parses your markup. Visum runs the 8 checks machines actually use and shows
+              you, in about 20 seconds, exactly what they can and can&apos;t read.
+            </motion.p>
 
-            <form onSubmit={handleSubmit} noValidate className="flex w-full flex-col gap-3 sm:flex-row">
-              <label htmlFor="scan-url" className="sr-only">Website URL</label>
+            <motion.form
+              {...entrance(0.22)}
+              onSubmit={handleSubmit}
+              noValidate
+              className="flex w-full flex-col gap-3 sm:flex-row"
+            >
+              <label htmlFor="scan-url" className="sr-only">
+                Website URL
+              </label>
               <div className="relative flex-[2]">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm text-primary/60"
+                >
+                  ›
+                </span>
                 <input
                   id="scan-url"
                   type="text"
                   inputMode="url"
                   value={url}
-                  onChange={(e) => { setUrl(e.target.value); if (error) setError(""); }}
-                  placeholder="yourstore.com or yourdomain.com"
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    if (error) setError("");
+                  }}
+                  placeholder="yourstore.com"
                   disabled={loading}
-                  className="h-12 w-full rounded-xl border border-border bg-secondary/50 px-4 text-base text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-13 w-full rounded-xl border border-border bg-input py-3.5 pl-9 pr-4 font-mono text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
                   aria-describedby={error ? "scan-error" : undefined}
                   aria-invalid={!!error}
                 />
               </div>
-              <button
+              <motion.button
                 type="submit"
                 disabled={loading}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 shrink-0 flex-1 sm:flex-none cursor-pointer"
+                whileTap={reduce ? undefined : { scale: 0.97 }}
+                className="inline-flex h-13 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-base font-bold text-primary-foreground transition-colors hover:bg-brand-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
                   <>
                     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
-                    Scanning...
+                    Scanning…
                   </>
                 ) : (
-                  "Check Your Score"
+                  "Run the scan"
                 )}
-              </button>
-            </form>
+              </motion.button>
+            </motion.form>
 
-            {/* Example URLs */}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground">
-              <span className="font-medium">Try your own, or scan:</span>
-              {exampleUrls.map((example) => (
-                <button
-                  key={example}
-                  type="button"
-                  onClick={() => handleExampleClick(example)}
-                  disabled={loading}
-                  aria-label={`Try scanning ${example}`}
-                  className="cursor-pointer border-0 bg-transparent px-0 py-0 text-xs text-accent underline underline-offset-2 decoration-accent/40 hover:decoration-accent transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
+            <motion.div {...entrance(0.3)} className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-muted-foreground">
+                <span>Try your own, or scan:</span>
+                {exampleUrls.map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    onClick={() => handleExampleClick(example)}
+                    disabled={loading}
+                    aria-label={`Try scanning ${example}`}
+                    className="cursor-pointer border-0 bg-transparent p-0 font-mono text-[13px] text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:decoration-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
 
-            {loading && (
-              <div className="flex flex-col gap-3">
-                {/* Progress bar */}
-                <div className="w-full">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">{progressMessages[progressIndex].message}</span>
-                    <span className="text-xs font-mono text-muted-foreground">{progressMessages[progressIndex].pct}%</span>
+              {loading && (
+                <div className="flex flex-col gap-2" aria-live="polite">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-muted-foreground">
+                      {progressMessages[progressIndex].message}
+                    </span>
+                    <span className="font-mono text-[13px] text-primary">
+                      {progressMessages[progressIndex].pct}%
+                    </span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-accent to-brand-400 transition-all duration-700 ease-out"
-                      style={{ width: `${progressMessages[progressIndex].pct}%` }}
+                      className="h-full rounded-full bg-primary transition-all duration-700"
+                      style={{
+                        width: `${progressMessages[progressIndex].pct}%`,
+                        transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)",
+                      }}
                       role="progressbar"
                       aria-valuenow={progressMessages[progressIndex].pct}
                       aria-valuemin={0}
@@ -298,72 +304,40 @@ export function Hero({ onScanStart, onScanEnd }) {
                     />
                   </div>
                 </div>
-                {/* AI fact */}
-                <p className="text-xs text-muted-foreground/60 italic text-center">
-                  Did you know? {aiFacts[factIndex]}
+              )}
+
+              {error && (
+                <p id="scan-error" className="text-sm font-medium text-fail" role="alert">
+                  {error}
                 </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-muted-foreground">
+                <span>Free</span>
+                <span aria-hidden="true" className="text-border">·</span>
+                <span>No account needed</span>
+                <span aria-hidden="true" className="text-border">·</span>
+                <span>Results in ~20 seconds</span>
               </div>
-            )}
-
-            {error && (
-              <p id="scan-error" className="text-sm font-medium text-destructive" role="alert">{error}</p>
-            )}
-
-            {/* Secondary CTA */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setUrl("anthropic.com");
-                  if (error) setError("");
-                  // Scroll to scanner and focus
-                  const input = document.getElementById("scan-url");
-                  if (input) {
-                    input.scrollIntoView({ behavior: "smooth", block: "center" });
-                    requestAnimationFrame(() => {
-                      input.focus({ preventScroll: true });
-                    });
-                  }
-                }}
-                className="inline-flex items-center gap-2 text-xs text-muted-foreground border border-border rounded-lg px-4 py-2 hover:bg-secondary transition-colors cursor-pointer bg-transparent"
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M4.25 2A2.25 2.25 0 002 4.25v2.5A2.25 2.25 0 004.25 9h2.5A2.25 2.25 0 009 6.75v-2.5A2.25 2.25 0 006.75 2h-2.5zm0 9A2.25 2.25 0 002 13.25v2.5A2.25 2.25 0 004.25 18h2.5A2.25 2.25 0 009 15.75v-2.5A2.25 2.25 0 006.75 11h-2.5zm9-9A2.25 2.25 0 0011 4.25v2.5A2.25 2.25 0 0013.25 9h2.5A2.25 2.25 0 0018 6.75v-2.5A2.25 2.25 0 0015.75 2h-2.5zm0 9A2.25 2.25 0 0011 13.25v2.5A2.25 2.25 0 0013.25 18h2.5A2.25 2.25 0 0018 15.75v-2.5A2.25 2.25 0 0015.75 11h-2.5z" clipRule="evenodd" />
-                </svg>
-See a Sample Report
-              </button>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {[
-                { text: "Free", icon: "check" },
-                { text: "No account needed", icon: "check" },
-                { text: "Results in 20 seconds", icon: "clock" },
-              ].map((item) => (
-                <div key={item.text} className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-                  {item.icon === "check" ? (
-                    <svg className="h-3.5 w-3.5 shrink-0 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span>{item.text}</span>
-                </div>
-              ))}
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right column: preview card — 40% */}
-          <div className="hidden lg:block justify-self-end w-full max-w-sm">
-            <div className="relative">
-
-              <HeroPreviewCard />
-            </div>
-          </div>
+          {/* Right: the machine's-eye view */}
+          <motion.div
+            {...(reduce
+              ? {}
+              : {
+                  initial: { opacity: 0, y: 36 },
+                  animate: { opacity: 1, y: 0 },
+                  transition: { duration: 0.9, delay: 0.35, ease: EASE_OUT_EXPO },
+                })}
+            className="w-full lg:justify-self-end"
+          >
+            <MachineEyeView />
+            <p className="mt-3 text-center font-mono text-[11px] text-muted-foreground/70">
+              what the crawler sees — not your design, your markup
+            </p>
+          </motion.div>
         </div>
       </Container>
     </section>

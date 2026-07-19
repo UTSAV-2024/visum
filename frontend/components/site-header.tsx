@@ -4,23 +4,23 @@ import { Container } from "./container";
 
 const navLinks = [
   { label: "How it works", href: "#how-it-works" },
-  { label: "Checks", href: "#checks" },
+  { label: "The 8 checks", href: "#checks" },
   { label: "Pricing", href: "#pricing" },
 ];
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-md">
       <Container>
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo — left */}
-          <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Visum home">
-            <Logo className="h-7 w-7 text-accent" />
-            <span className="text-lg font-semibold tracking-tight text-foreground">Visum</span>
+          <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label="Visum home">
+            <Logo className="h-6 w-6 text-primary" />
+            <span className="text-[17px] font-bold tracking-tight text-foreground">Visum</span>
           </Link>
 
-          {/* Nav — center/left with flex spacing */}
-          <nav aria-label="Primary" className="hidden md:flex items-center gap-8 mx-auto">
+          {/* Nav — center */}
+          <nav aria-label="Primary" className="mx-auto hidden items-center gap-8 md:flex">
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -33,7 +33,7 @@ export function SiteHeader() {
           </nav>
 
           {/* CTA — right */}
-          <div className="flex items-center shrink-0">
+          <div className="flex shrink-0 items-center">
             <button
               type="button"
               onClick={() => {
@@ -50,9 +50,9 @@ export function SiteHeader() {
                   });
                 }
               }}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 cursor-pointer border-0"
+              className="cursor-pointer rounded-lg border-0 bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-brand-200"
             >
-              Scan My Website
+              Run a scan
             </button>
           </div>
         </div>

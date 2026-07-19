@@ -2,59 +2,90 @@ import { useState } from "react";
 import { Logo } from "./logo";
 import { Container } from "./container";
 
+const columns = [
+  {
+    heading: "Product",
+    links: [
+      { label: "How it works", href: "#how-it-works" },
+      { label: "The 8 checks", href: "#checks" },
+      { label: "Pricing", href: "#pricing" },
+    ],
+  },
+  {
+    heading: "Company",
+    links: [
+      { label: "About", href: "/about" },
+      { label: "Roadmap", href: "/about#roadmap" },
+      { label: "Contact", href: "/contact" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Cookie Policy", href: "/privacy#cookies" },
+    ],
+  },
+];
+
 export function SiteFooter() {
   const [year] = useState(() => new Date().getFullYear());
 
   return (
-    <footer className="border-t border-border bg-secondary/20 py-16">
+    <footer className="border-t border-border py-16">
       <Container>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+        <div className="mb-12 grid grid-cols-1 gap-10 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Logo className="h-7 w-7 text-accent" />
-              <span className="text-lg font-semibold text-foreground">Visum</span>
+            <div className="mb-4 flex items-center gap-2.5">
+              <Logo className="h-6 w-6 text-primary" />
+              <span className="text-[17px] font-bold text-foreground">Visum</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              AI agent readiness, measured. Understand whether AI systems can discover and use your website.
+            <p className="max-w-[36ch] text-sm leading-relaxed text-muted-foreground">
+              The machine&apos;s-eye view of your website. See what AI systems can — and
+              can&apos;t — read.
             </p>
           </div>
 
-          <div>
-            <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Product</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it works</a></li>
-              <li><a href="#checks" className="text-muted-foreground hover:text-foreground transition-colors">8 Readiness Checks</a></li>
-              <li><a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Company</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</a></li>
-              <li><a href="/about#roadmap" className="text-muted-foreground hover:text-foreground transition-colors">Roadmap</a></li>
-              <li><a href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4 text-xs uppercase tracking-wider text-foreground">Legal</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</a></li>
-              <li><a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms</a></li>
-              <li><a href="/privacy#cookies" className="text-muted-foreground hover:text-foreground transition-colors">Cookie Policy</a></li>
-            </ul>
-          </div>
+          {columns.map((col) => (
+            <div key={col.heading}>
+              <h4 className="mb-4 font-mono text-[12px] text-primary">{col.heading}</h4>
+              <ul className="m-0 list-none space-y-3 p-0 text-sm">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className="text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
+          <p className="m-0 text-sm text-muted-foreground">
             &copy; {year} Visum. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <a href="https://twitter.com/visumhq" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground transition-colors" aria-label="Visum on Twitter">Twitter</a>
-            <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">GitHub</span>
-            <span className="text-sm text-muted-foreground cursor-default opacity-60" title="Coming soon">LinkedIn</span>
+            <a
+              href="https://twitter.com/visumhq"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Visum on Twitter"
+            >
+              Twitter
+            </a>
+            <span className="cursor-default text-sm text-muted-foreground opacity-60" title="Coming soon">
+              GitHub
+            </span>
+            <span className="cursor-default text-sm text-muted-foreground opacity-60" title="Coming soon">
+              LinkedIn
+            </span>
           </div>
         </div>
       </Container>
