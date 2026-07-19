@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
   Easing: exponential ease-out only — no bounce, no elastic.
 */
 
+/** @type {[number, number, number, number]} */
 export const EASE_OUT_EXPO = [0.16, 1, 0.3, 1];
 
 export function Reveal({
