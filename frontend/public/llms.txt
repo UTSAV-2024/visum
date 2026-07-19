@@ -1,0 +1,19 @@
+# Visum
+
+> Visum is a free AI-readiness scanner. It reads any public website the way AI crawlers do — checking robots.txt, JSON-LD structured data, llms.txt, MCP endpoints, JavaScript rendering, meta tags, sitemap health, and page speed — and returns a 0–100 AI-visibility score with a prioritized fix list in about 20 seconds.
+
+## Product
+
+- [Run a scan](https://visum-eight.vercel.app/): Paste a URL, get your AI-visibility score. Free, no account.
+- [How the scan works](https://visum-eight.vercel.app/#how-it-works): The three-step flow from URL to diagnosis.
+- [The 8 checks](https://visum-eight.vercel.app/#checks): Each technical signal we test and why it matters to AI systems.
+
+## Company
+
+- [About](https://visum-eight.vercel.app/about): What Visum is and where it's headed.
+- [Contact](https://visum-eight.vercel.app/contact): Get in touch.
+
+## Legal
+
+- [Privacy](https://visum-eight.vercel.app/privacy): Privacy policy.
+- [Terms](https://visum-eight.vercel.app/terms): Terms of service.

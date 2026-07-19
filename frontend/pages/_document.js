@@ -4,6 +4,14 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* Fonts: Bricolage Grotesque (display/body) + Fragment Mono (machine output) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Fragment+Mono&display=swap"
+        />
+
         {/* Google AdSense — preconnect for faster ad loading */}
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
         <script
@@ -24,7 +32,43 @@ export default function Document() {
         <meta name="robots" content="index, follow" />
 
         {/* Theme Color */}
-        <meta name="theme-color" content="#0a0a0f" />
+        <meta name="theme-color" content="#101b1c" />
+
+        {/* JSON-LD structured data — practice what we preach */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://visum-eight.vercel.app/#website",
+                  name: "Visum",
+                  url: "https://visum-eight.vercel.app",
+                  description:
+                    "Free AI-readiness scanner. See how AI systems like ChatGPT, Claude, and Perplexity read your website — score, findings, and fixes in about 20 seconds.",
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": "https://visum-eight.vercel.app/#app",
+                  name: "Visum — AI Agent Readiness Scanner",
+                  url: "https://visum-eight.vercel.app",
+                  applicationCategory: "DeveloperApplication",
+                  operatingSystem: "Web",
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                    description: "Free scan, no account required",
+                  },
+                  description:
+                    "Runs 8 technical checks (robots.txt, JSON-LD, llms.txt, MCP endpoint, JavaScript rendering, meta tags, sitemap, page speed) and returns a 0–100 AI-visibility score with a prioritized fix list.",
+                },
+              ],
+            }),
+          }}
+        />
 
         {/* Icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />

@@ -27,3 +27,5 @@ backend/.env.example
 .env.local
 frontend/.env.local
 frontend/.env.example
+# Claude — ignore bulky third-party skill installs, keep config
+.claude/skills/
