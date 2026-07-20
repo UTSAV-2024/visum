@@ -1,8 +1,20 @@
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
   reactStrictMode: true,
   allowedDevOrigins: ['192.168.29.153'],
+
+  // Pin the workspace root to this app. There is a stray package-lock.json at
+  // the repo root; without this, Next/Turbopack auto-detects the parent as the
+  // root and warns about multiple lockfiles (and can mis-resolve modules).
+  turbopack: {
+    root: __dirname,
+  },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
     NEXT_PUBLIC_STRIPE_PAYMENT_LINK: process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK || "",

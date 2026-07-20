@@ -9,6 +9,12 @@ from playwright.async_api import async_playwright
 logger = logging.getLogger(__name__)
 
 
+def looks_like_html(text: str) -> bool:
+    """Detect an HTML document masquerading as another resource (soft-404 SPA shell)."""
+    head = text.lstrip()[:300].lower()
+    return head.startswith("<!doctype") or head.startswith("<html") or "<head" in head[:150]
+
+
 class SiteCrawler:
 
     def __init__(self, timeout_ms: int = 60000):
@@ -25,11 +31,32 @@ class SiteCrawler:
             url = "https://" + url
         return url
 
-    async def _fetch(self, client: httpx.AsyncClient, url: str) -> str:
+    async def _fetch(self, client: httpx.AsyncClient, url: str, expect: str = "text") -> str:
+        """Fetch a non-HTML resource (robots.txt, llms.txt, sitemap.xml, JSON).
+
+        Guards against soft-404s: SPAs often return their HTML shell with
+        HTTP 200 for any path, which must not count as the resource existing.
+        """
         try:
             resp = await client.get(url)
-            if resp.status_code == 200:
-                return resp.text
+            if resp.status_code != 200:
+                return ""
+            content_type = resp.headers.get("content-type", "").lower()
+            body = resp.text
+            # An HTML response for a .txt/.xml/JSON resource is a soft-404
+            if "text/html" in content_type or looks_like_html(body):
+                logger.debug(f"_fetch rejected {url}: HTML response for expected {expect}")
+                return ""
+            if expect == "json":
+                stripped = body.lstrip()
+                is_sse = stripped.startswith("event:") or stripped.startswith("data:")
+                if not (stripped.startswith("{") or stripped.startswith("[") or is_sse):
+                    logger.debug(f"_fetch rejected {url}: not JSON/SSE")
+                    return ""
+            if expect == "xml" and "<" not in body[:200]:
+                logger.debug(f"_fetch rejected {url}: not XML")
+                return ""
+            return body
         except Exception as e:
             logger.debug(f"_fetch failed {url}: {e}")
         return ""
@@ -60,6 +87,11 @@ class SiteCrawler:
             "status_code":  None,
             "crawl_ms":     0,
             "error":        None,
+            # True only when Playwright actually rendered the page. When it
+            # falls back to static HTML, checks that compare static-vs-rendered
+            # (JS Rendering) or need real timings (Page Load Speed) must not
+            # fabricate a score — they report measured=False instead.
+            "js_rendered":  False,
         }
 
         # ── Step 1: Parallel httpx fetches ──────────────────────────────────
@@ -146,6 +178,7 @@ class SiteCrawler:
 
             playwright_elapsed = time.time() - playwright_start
             crawl_data["html_rendered"] = content
+            crawl_data["js_rendered"] = True
             crawl_data["performance"] = {
                 "ttfb_ms": ttfb_ms or load_ms,
                 "load_ms": load_ms,

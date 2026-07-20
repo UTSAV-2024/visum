@@ -104,21 +104,34 @@ export function UsageMeter({ usage = MOCK_USAGE }: UsageMeterProps) {
       {/* Divider */}
       <div className="mx-3 my-2 h-px bg-border/50" />
 
-      {/* Help links */}
+      {/* Help links — Documentation/Discord aren't live yet, so they render as
+          non-clickable "Soon" labels instead of dead "#" anchors. */}
       <div className="px-3 pb-2 space-y-1">
         {[
-          { label: "Documentation", href: "#" },
-          { label: "Discord", href: "#" },
-          { label: "Contact Support", href: "/contact" },
-        ].map((link) => (
-          <a
-            key={link.label}
-            href={link.href}
-            className="block text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors py-0.5"
-          >
-            {link.label}
-          </a>
-        ))}
+          { label: "Documentation", href: "#", disabled: true },
+          { label: "Discord", href: "#", disabled: true },
+          { label: "Contact Support", href: "/contact", disabled: false },
+        ].map((link) =>
+          link.disabled ? (
+            <span
+              key={link.label}
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground/30 py-0.5 cursor-default select-none"
+            >
+              {link.label}
+              <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/30">
+                Soon
+              </span>
+            </span>
+          ) : (
+            <a
+              key={link.label}
+              href={link.href}
+              className="block text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors py-0.5"
+            >
+              {link.label}
+            </a>
+          )
+        )}
       </div>
     </motion.div>
   );

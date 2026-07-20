@@ -34,10 +34,16 @@ async def test_robots_wildcard_blocked():
  
 @pytest.mark.asyncio
 async def test_robots_missing():
-    """No robots.txt = 0 score."""
+    """No robots.txt = all crawlers allowed by default = near-full, passing score.
+
+    Absence of robots.txt is not a block; the standard treats a missing file as
+    'everything allowed'. It must not be scored as a failure.
+    """
     result = await check_robots("https://example.com", "")
-    assert result.score == 0
+    assert result.score >= 13
+    assert result.passed is True
     assert "No robots.txt" in result.finding
+    assert "allowed by default" in result.finding
  
  
 # ── SCHEMA TESTS ────────────────────────────────────────────────────
@@ -100,6 +106,17 @@ async def test_llms_missing():
     result = await check_llms_txt("")
     assert result.score == 0
     assert result.passed == False
+
+@pytest.mark.asyncio
+async def test_llms_missing_says_not_found_not_incomplete():
+    """Regression: an absent llms.txt must say 'No llms.txt file found',
+    never 'found but incomplete'. A soft-404 (empty body) must not be treated
+    as a present-but-partial file."""
+    for empty in ("", "   ", "\n\n"):
+        result = await check_llms_txt(empty)
+        assert result.details.get("found") is False
+        assert "No llms.txt file found" in result.finding
+        assert "incomplete" not in result.finding.lower()
  
 @pytest.mark.asyncio
 async def test_llms_no_urls():
@@ -153,6 +170,27 @@ async def test_rendering_pure_spa():
     rendered = "<html><body><div id=app><h1>Title</h1><p>Description</p></div></body></html>"
     result = await check_rendering(static, rendered)
     assert result.score <= 5
+
+@pytest.mark.asyncio
+async def test_rendering_no_js_render_is_not_measured():
+    """When Playwright fell back to static HTML (js_rendered=False), the check
+    must NOT fabricate a 10/10 by comparing static-vs-static. It is reported as
+    not-measured and excluded from the total."""
+    html = "<html><body><p>Same content both ways</p></body></html>"
+    # Even with identical static == rendered (ratio would be 1.0 → fake 10/10)
+    result = await check_rendering(html, html, js_rendered=False)
+    assert result.measured is False
+    assert result.score == 0
+    assert result.passed is False
+    assert "Not measured" in result.finding
+
+@pytest.mark.asyncio
+async def test_rendering_js_render_default_measured():
+    """A normal render (js_rendered defaults True) is measured."""
+    static = "<html><body><p>Product name</p><p>Price $99</p></body></html>"
+    rendered = static
+    result = await check_rendering(static, rendered)
+    assert result.measured is True
  
  
 # ── META TESTS ──────────────────────────────────────────────────────
@@ -217,6 +255,10 @@ async def test_speed_slow():
  
 @pytest.mark.asyncio
 async def test_speed_no_data():
-    """Missing performance data returns partial."""
+    """Missing performance data must be reported as not-measured, not a
+    fabricated partial score. It is excluded from the total instead."""
     result = await check_speed({})
-    assert result.partial == True
+    assert result.measured is False
+    assert result.partial is False
+    assert result.score == 0
+    assert "Not measured" in result.finding

@@ -50,6 +50,14 @@ export default function Document() {
                     "Free AI-readiness scanner. See how AI systems like ChatGPT, Claude, and Perplexity read your website — score, findings, and fixes in about 20 seconds.",
                 },
                 {
+                  "@type": "Organization",
+                  "@id": "https://visum-eight.vercel.app/#org",
+                  name: "Visum",
+                  url: "https://visum-eight.vercel.app",
+                  description:
+                    "Makers of Visum, the free AI-readiness scanner for websites.",
+                },
+                {
                   "@type": "SoftwareApplication",
                   "@id": "https://visum-eight.vercel.app/#app",
                   name: "Visum — AI Agent Readiness Scanner",
@@ -64,6 +72,23 @@ export default function Document() {
                   },
                   description:
                     "Runs 8 technical checks (robots.txt, JSON-LD, llms.txt, MCP endpoint, JavaScript rendering, meta tags, sitemap, page speed) and returns a 0–100 AI-visibility score with a prioritized fix list.",
+                },
+                {
+                  "@type": "Service",
+                  "@id": "https://visum-eight.vercel.app/#scan-service",
+                  name: "AI-Readiness Website Scan",
+                  serviceType: "AI visibility analysis",
+                  provider: { "@id": "https://visum-eight.vercel.app/#org" },
+                  areaServed: "Worldwide",
+                  url: "https://visum-eight.vercel.app",
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                    description: "Free scan, no account required",
+                  },
+                  description:
+                    "Scans any public website the way AI crawlers do and returns a 0–100 AI-visibility score with prioritized, per-check fixes.",
                 },
               ],
             }),

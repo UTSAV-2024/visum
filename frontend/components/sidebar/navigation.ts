@@ -116,13 +116,16 @@ export const SECONDARY_NAV: NavGroup[] = [
       { id: "permissions", label: "Permissions", href: "/team", icon: Users },
     ],
   },
+  // Billing / API / Integrations / Settings are not built yet. Rather than
+  // sending users to unrelated pages (they previously all pointed at /team) or
+  // dead "#" anchors, these are marked disabled and rendered with a "Soon" tag.
   {
     id: "billing",
     label: "Billing",
     icon: CreditCard,
     items: [
-      { id: "usage", label: "Usage", href: "/team", icon: CreditCard },
-      { id: "invoices", label: "Invoices", href: "/team", icon: CreditCard },
+      { id: "usage", label: "Usage", href: "#", icon: CreditCard, disabled: true },
+      { id: "invoices", label: "Invoices", href: "#", icon: CreditCard, disabled: true },
     ],
   },
   {
@@ -130,9 +133,9 @@ export const SECONDARY_NAV: NavGroup[] = [
     label: "API",
     icon: KeyRound,
     items: [
-      { id: "api-keys", label: "Keys", href: "/team", icon: KeyRound },
-      { id: "tokens", label: "Tokens", href: "/team", icon: KeyRound },
-      { id: "webhooks", label: "Webhooks", href: "/team", icon: KeyRound },
+      { id: "api-keys", label: "Keys", href: "#", icon: KeyRound, disabled: true },
+      { id: "tokens", label: "Tokens", href: "#", icon: KeyRound, disabled: true },
+      { id: "webhooks", label: "Webhooks", href: "#", icon: KeyRound, disabled: true },
     ],
   },
   {
@@ -140,11 +143,11 @@ export const SECONDARY_NAV: NavGroup[] = [
     label: "Integrations",
     icon: Puzzle,
     items: [
-      { id: "int-slack", label: "Slack", href: "#", icon: Puzzle },
-      { id: "int-github", label: "GitHub", href: "#", icon: Puzzle },
-      { id: "int-notion", label: "Notion", href: "#", icon: Puzzle },
-      { id: "int-shopify", label: "Shopify", href: "#", icon: Puzzle },
-      { id: "int-wordpress", label: "WordPress", href: "#", icon: Puzzle },
+      { id: "int-slack", label: "Slack", href: "#", icon: Puzzle, disabled: true },
+      { id: "int-github", label: "GitHub", href: "#", icon: Puzzle, disabled: true },
+      { id: "int-notion", label: "Notion", href: "#", icon: Puzzle, disabled: true },
+      { id: "int-shopify", label: "Shopify", href: "#", icon: Puzzle, disabled: true },
+      { id: "int-wordpress", label: "WordPress", href: "#", icon: Puzzle, disabled: true },
     ],
   },
   {
@@ -152,10 +155,10 @@ export const SECONDARY_NAV: NavGroup[] = [
     label: "Settings",
     icon: Settings,
     items: [
-      { id: "general", label: "General", href: "/team", icon: Settings },
-      { id: "notifications", label: "Notifications", href: "/team", icon: Settings },
-      { id: "security", label: "Security", href: "/team", icon: Settings },
-      { id: "appearance", label: "Appearance", href: "/team", icon: Settings },
+      { id: "general", label: "General", href: "#", icon: Settings, disabled: true },
+      { id: "notifications", label: "Notifications", href: "#", icon: Settings, disabled: true },
+      { id: "security", label: "Security", href: "#", icon: Settings, disabled: true },
+      { id: "appearance", label: "Appearance", href: "#", icon: Settings, disabled: true },
     ],
   },
 ];
@@ -163,8 +166,8 @@ export const SECONDARY_NAV: NavGroup[] = [
 // ── Help & Support ──────────────────────────────────────────────
 
 export const HELP_LINKS: NavItem[] = [
-  { id: "docs", label: "Documentation", href: "#", icon: FileText },
-  { id: "discord", label: "Discord", href: "#", icon: FileText },
+  { id: "docs", label: "Documentation", href: "#", icon: FileText, disabled: true },
+  { id: "discord", label: "Discord", href: "#", icon: FileText, disabled: true },
   { id: "support", label: "Contact Support", href: "/contact", icon: FileText },
 ];
 

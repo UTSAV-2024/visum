@@ -15,6 +15,17 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Windows reserved device names — these get created by accident when a command
+# redirects to `nul`/`con`/etc. under a POSIX shell on Windows. A stray
+# `frontend/nul` file broke the Next.js build once; never commit them.
+nul
+**/nul
+con
+prn
+aux
+com[1-9]
+lpt[1-9]
+
 # IDE
 .vscode/
 .idea/

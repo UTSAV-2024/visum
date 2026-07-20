@@ -1,0 +1,166 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Visum API",
+    "description": "Visum scans a website for AI-agent readiness — robots.txt permissions for AI crawlers, JSON-LD structured data, llms.txt, sitemap, meta/Open Graph tags, JavaScript-rendering dependence, MCP/OpenAPI availability, and page speed — and returns a 0–100 score with per-check findings and fixes.",
+    "version": "0.1.0",
+    "contact": {
+      "name": "Visum",
+      "url": "https://visum-eight.vercel.app"
+    },
+    "license": {
+      "name": "Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://visum-xoe3.onrender.com",
+      "description": "Production API"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/scan": {
+      "post": {
+        "operationId": "createScan",
+        "summary": "Scan a URL for AI-agent readiness",
+        "description": "Crawls the given URL, runs all readiness checks, and returns a scored report. Rate limited per client IP.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ScanRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scan completed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScanResponse" }
+              }
+            }
+          },
+          "422": { "description": "Invalid or unreachable URL" },
+          "429": { "description": "Rate limit exceeded — see the Retry-After header" }
+        }
+      }
+    },
+    "/status/{scan_id}": {
+      "get": {
+        "operationId": "getScanStatus",
+        "summary": "Get the status of a scan",
+        "parameters": [
+          {
+            "name": "scan_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current scan status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScanStatusResponse" }
+              }
+            }
+          },
+          "404": { "description": "Unknown scan_id" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Health check",
+        "responses": { "200": { "description": "Service is healthy" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ScanRequest": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The website URL to scan.",
+            "examples": ["https://example.com"]
+          },
+          "email": {
+            "type": ["string", "null"],
+            "format": "email",
+            "description": "Optional email for follow-up."
+          }
+        }
+      },
+      "ScanResponse": {
+        "type": "object",
+        "required": ["scan_id", "result", "status"],
+        "properties": {
+          "scan_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["pending", "running", "completed", "failed"] },
+          "result": { "$ref": "#/components/schemas/ScanResult" }
+        }
+      },
+      "ScanResult": {
+        "type": "object",
+        "required": ["url", "total_score", "band", "checks"],
+        "properties": {
+          "url": { "type": "string" },
+          "total_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "max_score": { "type": "integer", "default": 100 },
+          "band": { "type": "string", "description": "Human-readable score band." },
+          "band_message": { "type": "string" },
+          "checks": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CheckResult" }
+          },
+          "scan_time_ms": { "type": "integer" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "upgrade_cta": { "type": "string" }
+        }
+      },
+      "CheckResult": {
+        "type": "object",
+        "required": ["name", "score", "max_score", "passed"],
+        "properties": {
+          "name": { "type": "string" },
+          "score": { "type": "integer" },
+          "max_score": { "type": "integer" },
+          "passed": { "type": "boolean" },
+          "partial": { "type": "boolean", "default": false },
+          "measured": {
+            "type": "boolean",
+            "default": true,
+            "description": "False when tooling could not measure this check; it is then excluded from the total."
+          },
+          "description": { "type": "string" },
+          "finding": { "type": "string" },
+          "fix": { "type": "string" }
+        }
+      },
+      "ScanStatusResponse": {
+        "type": "object",
+        "required": ["scan_id", "status"],
+        "properties": {
+          "scan_id": { "type": "string" },
+          "url": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "running", "completed", "failed"] },
+          "total_score": { "type": ["integer", "null"] },
+          "band": { "type": ["string", "null"] },
+          "error": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "completed_at": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

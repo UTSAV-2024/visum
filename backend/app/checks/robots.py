@@ -78,16 +78,18 @@ async def check_robots(base_url: str, robots_content: str = "") -> CheckResult:
                 details={"error": str(e)}
             )
  
-    # No robots.txt = agents use defaults = generally allowed
-    # But we penalise because explicit permission is better practice
+    # No robots.txt = there are no rules to obey, so by the standard every
+    # crawler (including AI bots) is allowed. That is a passing state, not a
+    # failure. We award near-full credit and only hold back the last couple of
+    # points to nudge sites toward an explicit allow-list, which is best practice.
     if not robots_content:
         return CheckResult(
             name="AI Bot Permissions (robots.txt)",
-            score=0, max_score=15, passed=False, partial=False,
+            score=13, max_score=15, passed=True, partial=False,
             description="Checks whether AI crawlers are permitted in robots.txt.",
-            finding="No robots.txt file found. AI crawlers cannot determine your crawl rules.",
-            fix="Create a robots.txt file at yoursite.com/robots.txt. Add User-agent: GPTBot then Allow: / for each AI crawler.",
-            details={"found": False}
+            finding="No robots.txt file found. With no rules present, all crawlers — including AI bots like GPTBot and ClaudeBot — are allowed by default.",
+            fix="Optional: add a robots.txt at yoursite.com/robots.txt with an explicit 'User-agent: GPTBot' / 'Allow: /' block so your intent is unambiguous to AI crawlers.",
+            details={"found": False, "default_allowed": True}
         )
  
     bot_results, wildcard_disallows = parse_robots(robots_content)
