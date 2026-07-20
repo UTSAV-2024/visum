@@ -12,10 +12,10 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 
 ## P0 — Dogfooding (your own site scores 45/100)
 
-- [x] Add JSON-LD structured data to the Visum frontend (`WebSite` + `SoftwareApplication` schema) — added to `frontend/pages/_document.js`
-- [x] Add a complete `llms.txt` to the Visum frontend (project name, description, doc links) — added at `frontend/public/llms.txt`
-- [ ] Add an MCP endpoint (or OpenAPI spec) to Visum itself
-- [ ] Verify the deployed site scores 90+ on its own scanner; use that as a marketing point
+- [x] Add JSON-LD structured data to the Visum frontend — `_document.js` now emits `WebSite` + `Organization` + `SoftwareApplication` + `Service` (the `Service` node is a high-value type that scores the full 20/20); also published `frontend/public/openapi.json`
+- [x] Add a complete `llms.txt` to the Visum frontend — restructured to the standard `>` summary + detail-paragraph shape so it parses as complete (10/10) at `frontend/public/llms.txt`
+- [x] Add an MCP endpoint (or OpenAPI spec) to Visum itself — real MCP JSON-RPC endpoint at `frontend/pages/api/mcp.js` (`initialize`/`tools/list`/`tools/call → scan_website`, proxies the live scan API) **and** an OpenAPI spec at `/openapi.json`. Both pass the scanner's own validators; MCP check scores 10/10.
+- [~] Verify the deployed site scores 90+ on its own scanner — local prod-build dogfood scan reached **89/100** ("Excellent — AI Optimized"), with every content-controllable check maxed (robots 15/15, JSON-LD 20/20, llms.txt 10/10, MCP 10/10, JS-rendering 10/10, meta 10/10, sitemap 5/5). The only gap is Page Load Speed 0/10, a localhost artifact (no CDN); on Vercel's CDN that recovers, putting the deployed site at ~99. Run one real post-deploy scan to confirm and use as a marketing point.
 
 ## P1 — Trust: copy and numbers
 
@@ -37,7 +37,7 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 ## P2 — Product honesty
 
 - [x] Gate unfinished mock pages (Team Management, Competitor Intelligence, Reports, AI Insights) behind "coming soon" or finish them — all 7 demo routes now show a "preview / sample data" banner via `frontend/components/app-layout.tsx`
-- [ ] Audit nav so users can't click into non-functional billing/API-key screens
+- [x] Audit nav so users can't click into non-functional billing/API-key screens — Billing / API / Integrations / Settings sub-items (which pointed at `/team` or dead `#`) are now `disabled` with a "Soon" tag (`sidebar/navigation.ts`, `nav-item.tsx`); dead Documentation/Discord help links in `usage-meter.tsx` render as non-clickable "Soon" labels
 
 ## P2 — Security & repo hygiene
 

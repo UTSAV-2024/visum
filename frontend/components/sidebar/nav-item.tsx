@@ -47,6 +47,11 @@ export function NavItem({ item, isChild, onNavigate }: NavItemProps) {
         >
           {item.label}
         </motion.span>
+        {expanded && (
+          <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/40">
+            Soon
+          </span>
+        )}
       </div>
     );
   }

@@ -1,6 +1,8 @@
 # Visum
 
-> Visum is a free AI-readiness scanner. It reads any public website the way AI crawlers do — checking robots.txt, JSON-LD structured data, llms.txt, MCP endpoints, JavaScript rendering, meta tags, sitemap health, and page speed — and returns a 0–100 AI-visibility score with a prioritized fix list in about 20 seconds.
+> A free AI-readiness scanner for any public website.
+
+Visum reads any public website the way AI crawlers do — checking robots.txt permissions for AI bots, JSON-LD structured data, llms.txt, MCP endpoints, JavaScript rendering, meta tags, sitemap health, and page speed — and returns a 0–100 AI-visibility score with a prioritized fix list in about 20 seconds.
 
 ## Product
 
