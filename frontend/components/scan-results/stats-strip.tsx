@@ -4,14 +4,20 @@ import { cn } from "../../lib/utils";
 export function StatsStrip({ checks, className }) {
   const [isVisible, setIsVisible] = useState(false);
 
-  const total = checks?.length || 0;
-  const passed = checks?.filter((c) => c.passed).length || 0;
-  const failed = checks?.filter((c) => !c.passed && !c.partial).length || 0;
-  const warnings = checks?.filter((c) => c.partial).length || 0;
+  // Only count checks we could actually measure. An unmeasured check (e.g. a
+  // browser-dependent one when rendering was unavailable) has no pass/fail
+  // state and must not distort the counts or the average.
+  const measured = (checks || []).filter((c) => c.measured !== false);
+  const total = measured.length;
+  const passed = measured.filter((c) => c.passed).length;
+  const failed = measured.filter((c) => !c.passed && !c.partial).length;
+  const warnings = measured.filter((c) => c.partial).length;
 
-  const avgScore = total > 0
-    ? Math.round(checks.reduce((s, c) => s + (c.score / c.max_score) * 100, 0) / total)
-    : 0;
+  // Weighted average so this figure agrees with the headline score
+  // (total_score / 100), instead of the mean of per-check percentages.
+  const earned = measured.reduce((s, c) => s + c.score, 0);
+  const available = measured.reduce((s, c) => s + c.max_score, 0);
+  const avgScore = available > 0 ? Math.round((earned / available) * 100) : 0;
 
   useEffect(() => {
     setIsVisible(true);

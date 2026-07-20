@@ -5,10 +5,10 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 
 ## P0 — Broken product (fix first)
 
-- [ ] Install Playwright Chromium in the local backend venv (`python -m playwright install chromium`)
-- [ ] Add `playwright install chromium` to the Render build command so the deployed backend can measure speed
-- [ ] Make the Page Load Speed check report "not measured" honestly (no fabricated 5/10) when Playwright is unavailable
-- [ ] Make the JavaScript Rendering check fail/skip honestly when Playwright falls back to static HTML (currently compares static-vs-static and always awards 10/10, `backend/app/crawler.py:172`)
+- [x] Install Playwright Chromium in the local backend venv (`python -m playwright install chromium`) — installed in `backend/venv` (exit 0)
+- [x] Add `playwright install chromium` to the Render build command so the deployed backend can measure speed — present in `render.yaml` buildCommand
+- [x] Make the Page Load Speed check report "not measured" honestly (no fabricated 5/10) when Playwright is unavailable — `speed.py` now returns `measured=False`, excluded from total
+- [x] Make the JavaScript Rendering check fail/skip honestly when Playwright falls back to static HTML — crawler now sets `js_rendered`; `rendering.py` reports `measured=False` instead of comparing static-vs-static
 
 ## P0 — Dogfooding (your own site scores 45/100)
 
@@ -19,20 +19,20 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 
 ## P1 — Trust: copy and numbers
 
-- [ ] Write unique "WHY IT MATTERS" copy per check (currently the identical paragraph repeats on every issue)
-- [ ] Fix IMPACT text so "Medium" severity doesn't say "significantly affects" (severity label and sentence must agree)
-- [ ] Remove audience-mismatched copy ("Shopify merchants have this built-in" shown for non-Shopify sites; Cursor/Copilot llms.txt copy shown for e-commerce scans)
-- [ ] Fix "Estimated score gain" so it never exceeds the points actually available on that check
-- [ ] Reconcile "AVG SCORE %" vs "total/100" (63% shown next to 50/100 confuses users)
-- [ ] Remove or cite the "3x more likely to appear in AI answers" statistic
-- [ ] Remove or cite "every point increase correlates with higher citation rates"
+- [x] Write unique "WHY IT MATTERS" copy per check — per-check `whyItMatters` in `check-detail-card.tsx`
+- [x] Fix IMPACT text so "Medium" severity doesn't say "significantly affects" — `IMPACT_SENTENCE` map keyed by severity
+- [x] Remove audience-mismatched copy — dropped "Shopify merchants have this built-in" (`mcp.py`); llms.txt copy now says it's low-priority for e-commerce
+- [x] Fix "Estimated score gain" so it never exceeds the points actually available — capped to `max_score - score` (`cappedGain`)
+- [x] Reconcile "AVG SCORE %" vs "total/100" — StatsStrip now uses the weighted `earned/available` so it matches the headline
+- [x] Remove or cite the "3x more likely to appear in AI answers" statistic — no such uncited stat remains on the real result flow (remaining `2.3x`/`4x` copy lives only in sample-data demos behind the "preview" banner)
+- [x] Remove or cite "every point increase correlates with higher citation rates" — removed from `check-detail-card.tsx`; also removed the uncited "67%" schema stat
 
 ## P1 — Check design correctness
 
-- [ ] Reweight the MCP Endpoint check (20 pts that ~every real site auto-fails feels rigged; make it a bonus or reduce weight)
-- [ ] Fix robots.txt scoring: absence of robots.txt means "all crawlers allowed" and should not score 0/15 with misleading copy
-- [ ] Harden `_fetch` (`backend/app/crawler.py:28`): check content-type and detect soft-404s so an SPA shell returned with HTTP 200 doesn't count as llms.txt/sitemap
-- [ ] Add a regression test: a site with no llms.txt must yield "No llms.txt file found", never "found but incomplete"
+- [x] Reweight the MCP Endpoint check — reduced 20→10 and reframed as an emerging "bonus" signal; scorer normalises to /100 so weights stay consistent
+- [x] Fix robots.txt scoring: absence of robots.txt means "all crawlers allowed" and should not score 0/15 — now scores 13/15 and passes, with honest copy
+- [x] Harden `_fetch`: checks content-type and detects soft-404s (HTML shell for a .txt/.xml/JSON resource) so an SPA 200 doesn't count as llms.txt/sitemap
+- [x] Add a regression test: a site with no llms.txt must yield "No llms.txt file found", never "found but incomplete" — `test_llms_missing_says_not_found_not_incomplete` (whitespace-only bodies now treated as absent)
 
 ## P2 — Product honesty
 
@@ -41,9 +41,9 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 
 ## P2 — Security & repo hygiene
 
-- [ ] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only)
-- [ ] Rotate the Supabase service-role key
-- [ ] Remove duplicate lockfile (root `package-lock.json` vs `frontend/package-lock.json`) or set `turbopack.root` in next.config
-- [ ] Consolidate the two Python venvs (root `venv/` and `backend/venv/`)
-- [ ] Remove committed debug/scratch files: `backend/debug_cors.py`, `backend/restart_backend.py`, `backend/test_manual.py`, `testresultsday2.txt`
-- [ ] Add `nul` (and similar Windows reserved names) awareness — the stray `frontend/nul` file broke the entire build once already
+- [~] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only) — verified: the key is read only in `pages/api/*.js` (server-side) via `process.env`, with no `NEXT_PUBLIC_` prefix, so it never reaches the client bundle. `.env.local` is untracked. Physically relocating it to a dedicated server env is still a deployment follow-up.
+- [ ] Rotate the Supabase service-role key — **requires the user** (Supabase dashboard action; cannot be done from code)
+- [x] Remove duplicate lockfile / set `turbopack.root` in next.config — `turbopack.root` pinned to the frontend dir in `next.config.mjs`
+- [ ] Consolidate the two Python venvs (root `venv/` and `backend/venv/`) — left for the user (destructive local env change; both are gitignored)
+- [x] Remove committed debug/scratch files: `backend/debug_cors.py`, `backend/restart_backend.py`, `backend/test_manual.py`, `testresultsday2.txt` — removed (also removed stray `backend/.env.example.backup1`)
+- [x] Add `nul` (and similar Windows reserved names) awareness — added to root `.gitignore`

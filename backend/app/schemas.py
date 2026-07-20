@@ -13,6 +13,7 @@ class CheckResult(BaseModel):
     max_score:   int        # maximum possible points
     passed:      bool
     partial:     bool = False
+    measured:    bool = True  # False = tooling could not measure; excluded from total
     description: str        # what we checked
     finding:     str        # what we found
     fix:         str        # what the user should do

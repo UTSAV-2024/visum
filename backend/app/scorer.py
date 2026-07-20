@@ -62,16 +62,31 @@ async def run_scan(crawl_data: dict) -> ScanResult:
         check_schema_ld(crawl_data.get("html_rendered", "")),
         check_llms_txt(crawl_data.get("llms_txt", "")),
         check_mcp(crawl_data["base_url"], crawl_data.get("mcp_response")),
-        check_rendering(crawl_data.get("html_static", ""), crawl_data.get("html_rendered", "")),
+        check_rendering(
+            crawl_data.get("html_static", ""),
+            crawl_data.get("html_rendered", ""),
+            crawl_data.get("js_rendered", True),
+        ),
         check_meta(crawl_data.get("html_rendered", "")),
         check_sitemap(crawl_data.get("sitemap_xml", "")),
         check_speed(crawl_data.get("performance", {})),
     )
 
     for c in checks:
-        logger.info(f"  {c.name}: {c.score}/{c.max_score} | {c.finding[:60]}")
+        measured_tag = "" if c.measured else " [not measured]"
+        logger.info(f"  {c.name}: {c.score}/{c.max_score}{measured_tag} | {c.finding[:60]}")
 
-    total = sum(c.score for c in checks)
+    # ── Total is scored only over the checks we could actually measure ──
+    # A check that could not be measured (e.g. Playwright unavailable) is
+    # excluded from both the numerator and denominator, then the result is
+    # normalised back to a 0-100 scale. This keeps the headline honest: we
+    # never fabricate points, and we never penalise a site for our tooling.
+    measured_checks = [c for c in checks if c.measured]
+    earned = sum(c.score for c in measured_checks)
+    available = sum(c.max_score for c in measured_checks)
+    total = round(earned / available * 100) if available > 0 else 0
+    total = max(0, min(100, total))
+
     band, msg = get_band(total)
     cta = get_upgrade_cta(list(checks), total)
 

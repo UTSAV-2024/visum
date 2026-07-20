@@ -12,10 +12,10 @@ async def check_speed(performance: dict) -> CheckResult:
     if not performance or "ttfb_ms" not in performance:
         return CheckResult(
             name="Page Load Speed",
-            score=5, max_score=10, passed=False, partial=True,
-            description="Checks page speed to assess AI agent timeout risk.",
-            finding="Could not measure page load speed. Assuming moderate performance.",
-            fix="Optimise your hosting and reduce page weight to ensure AI agents do not time out.",
+            score=0, max_score=10, passed=False, partial=False, measured=False,
+            description="Checks page load speed. AI agents time out on slow sites and move to faster competitors.",
+            finding="Not measured — the headless browser was unavailable, so no real load timing was captured. This check was excluded from your score.",
+            fix="This is a limitation on our side, not your site. Re-run the scan to get a speed measurement.",
             details={"measured":False}
         )
  
