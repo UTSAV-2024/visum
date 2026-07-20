@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, ChevronUp, User, HelpCircle } from "lucide-react";
+import { LogOut, ChevronUp, HelpCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useSidebar } from "./sidebar-context";
+import { useAuth } from "../../lib/auth-context";
 import type { UserProfile } from "./types";
 
 const MOCK_USER: UserProfile = {
@@ -13,14 +15,31 @@ const MOCK_USER: UserProfile = {
   company: "Acme Inc.",
 };
 
+/** Derive a display profile from the Supabase user, falling back to the demo
+ * profile when auth is off (so the sample dashboard still looks complete). */
+function deriveProfile(authUser: any): UserProfile {
+  if (!authUser) return MOCK_USER;
+  const meta = authUser.user_metadata || {};
+  const email: string = authUser.email || "";
+  const name: string =
+    meta.full_name || meta.name || (email ? email.split("@")[0] : "Account");
+  const company: string = meta.company || (email ? email.split("@")[1] || "" : "");
+  return { name, email, company };
+}
+
 interface UserSectionProps {
   user?: UserProfile;
 }
 
-export function UserSection({ user = MOCK_USER }: UserSectionProps) {
+export function UserSection({ user: userProp }: UserSectionProps) {
   const { expanded } = useSidebar();
+  const { user: authUser, authEnabled, signOut } = useAuth();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const user = userProp ?? deriveProfile(authEnabled ? authUser : null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -32,7 +51,14 @@ export function UserSection({ user = MOCK_USER }: UserSectionProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const initials = user.name
+  async function handleLogout() {
+    setSigningOut(true);
+    setOpen(false);
+    await signOut();
+    router.replace("/login");
+  }
+
+  const initials = (user.name || "?")
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -99,13 +125,16 @@ export function UserSection({ user = MOCK_USER }: UserSectionProps) {
                 Help & Support
               </button>
 
-              <button
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Log out
-              </button>
+              {authEnabled && (
+                <button
+                  onClick={handleLogout}
+                  disabled={signingOut}
+                  className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {signingOut ? "Signing out…" : "Log out"}
+                </button>
+              )}
             </div>
           </motion.div>
         )}

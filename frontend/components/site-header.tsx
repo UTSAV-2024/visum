@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { Container } from "./container";
+import { isAuthEnabled } from "../lib/config";
 
 const navLinks = [
   { label: "How it works", href: "#how-it-works" },
@@ -33,7 +34,15 @@ export function SiteHeader() {
           </nav>
 
           {/* CTA — right */}
-          <div className="flex shrink-0 items-center">
+          <div className="flex shrink-0 items-center gap-2">
+            {isAuthEnabled && (
+              <Link
+                href="/login"
+                className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline-flex no-underline"
+              >
+                Sign in
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => {
