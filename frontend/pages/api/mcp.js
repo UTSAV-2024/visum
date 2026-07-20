@@ -63,6 +63,41 @@ function rpcError(id, code, message) {
   return { jsonrpc: "2.0", id: id ?? null, error: { code, message } };
 }
 
+// Defense-in-depth URL validation. The backend's /scan is the authority (it
+// blocks private/loopback/link-local hosts), but validating here fails fast on
+// junk input and avoids a wasted round-trip. Returns null if acceptable, or an
+// error message string.
+function rejectUrl(url) {
+  if (typeof url !== "string" || url.length === 0) return "url is required";
+  if (url.length > 2048) return "url is too long";
+  let parsed;
+  try {
+    parsed = new URL(url.includes("://") ? url : `https://${url}`);
+  } catch {
+    return "url is not a valid URL";
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return "url must use http or https";
+  }
+  const host = parsed.hostname.toLowerCase();
+  // Obvious internal targets — the backend rejects these too, but fail early.
+  if (
+    host === "localhost" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".internal") ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^169\.254\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+  ) {
+    return "scanning internal/private hosts is not allowed";
+  }
+  return null;
+}
+
 async function runScan(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55000);
@@ -142,10 +177,9 @@ export default async function handler(req, res) {
             .json(rpcError(id, -32602, `Unknown tool: ${name}`));
         }
         const url = args.url;
-        if (!url || typeof url !== "string") {
-          return res
-            .status(200)
-            .json(rpcError(id, -32602, "Missing required argument: url"));
+        const badUrl = rejectUrl(url);
+        if (badUrl) {
+          return res.status(200).json(rpcError(id, -32602, badUrl));
         }
 
         try {
