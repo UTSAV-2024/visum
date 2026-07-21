@@ -35,7 +35,7 @@ page load speed.
 
 - ✅ Scanner backend is functional and honest (421 tests passing).
 - ✅ Marketing site + scan result experience are polished.
-- ✅ Visum dogfoods to **89/100** on its own scanner (local prod build; expected ~99 on Vercel's CDN once Page Load Speed is measured against a real edge).
+- ✅ Visum dogfoods to **100/100** on its own scanner in production (verified against https://visum-eight.vercel.app — every check maxed).
 - ✅ Email/password **authentication** is built (opt-in via Supabase env vars).
 - ⚠️ The "product dashboard" (analytics, insights, competitors, etc.) is **sample data**, gated behind "preview" banners — not yet wired to real per-user data.
 - ⚠️ Auth exists but the dashboard doesn't yet show a signed-in user's **own** scans.
@@ -124,8 +124,8 @@ page load speed.
 - Two local Python venvs (`venv/` and `backend/venv/`) not consolidated.
 
 ### E. Go-to-market
-- Deployed **90+ dogfood score** not yet confirmed on production (a strong
-  marketing proof point once verified).
+- ✅ Production dogfood score **confirmed: 100/100** — ready to use as a
+  landing-page proof point.
 - Stripe payment link is optional/unconfigured — no real Pro upgrade path.
 
 ---
@@ -133,14 +133,15 @@ page load speed.
 ## 5. Roadmap — what to work on next
 
 ### P0 — Make it a real product
-1. **Wire the dashboard to real data.** Show the logged-in user's own scans from
-   Supabase (list, score history, per-scan detail). Start with a "My Scans" view;
-   retire or clearly separate the sample dashboards.
-2. **Server-side auth + RLS.** Add `getServerSideProps` protection on any
-   real-data route and Row Level Security so a user can only read their own rows.
-3. **Deploy & verify 90+.** Run one production scan of Visum's own site, confirm
-   the score, and use it as a landing-page proof point.
-4. **Rotate the Supabase service-role key** (owner action).
+1. ✅ **Wire the dashboard to real data.** Done — `MyScans` shows the signed-in
+   user's own scans; sample panels are separated and labelled. (PR #4)
+2. ✅ **Server-side auth + RLS.** Done — `getServerSideProps` enforcement plus
+   RLS policies scoped to `user_id = auth.uid()`, verified both directions. (PR #4)
+3. ✅ **Deploy & verify 90+.** Done — production scores **100/100**. Fixing the
+   speed-measurement bug was required to get an honest number.
+4. **Rotate the Supabase service-role key** (owner action — still outstanding).
+5. **Redeploy Vercel so auth activates.** `NEXT_PUBLIC_*` vars are inlined at
+   build time; they're set but not yet in the deployed bundle.
 
 ### P1 — Trust, retention, resilience
 5. **Auth flows:** password reset + at least one OAuth provider.
