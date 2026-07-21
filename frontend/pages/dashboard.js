@@ -14,9 +14,57 @@ import { ActivityFeed } from "../components/dashboard/activity-feed";
 import { QuickActions } from "../components/dashboard/quick-actions";
 import { DashboardSkeleton } from "../components/dashboard/loading-skeleton";
 import { CommandCenterHero } from "../components/dashboard/command-center-hero";
+import { MyScans } from "../components/dashboard/my-scans";
 import { cn } from "../lib/utils";
 import { getBand } from "../lib/scan-data";
 import { track } from "../lib/analytics";
+import { getSupabaseServerClient } from "../lib/supabase/server";
+import { isAuthEnabled } from "../lib/config";
+
+/**
+ * Server-side auth + real data.
+ *
+ * This is the enforcement boundary: an unauthenticated request never receives
+ * the dashboard at all. The scans are fetched with the user's own RLS-scoped
+ * client, so the database itself guarantees a user can only ever see their own
+ * rows — the query has no user_id filter because RLS applies it.
+ *
+ * When auth isn't configured the page falls back to its previous behaviour so
+ * the sample dashboard stays usable.
+ */
+export async function getServerSideProps(ctx) {
+  if (!isAuthEnabled) {
+    return { props: { scans: [], authEnabled: false } };
+  }
+
+  const supabase = getSupabaseServerClient(ctx);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const user = userError ? null : userData?.user;
+
+  if (!user) {
+    return {
+      redirect: { destination: "/login?next=%2Fdashboard", permanent: false },
+    };
+  }
+
+  const { data: scans, error } = await supabase
+    .from("scans")
+    .select("id, scan_id, url, total_score, band, checks, scan_time_ms, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error("[dashboard] failed to load scans:", error.message);
+  }
+
+  return {
+    props: {
+      scans: scans ?? [],
+      authEnabled: true,
+      userEmail: user.email ?? null,
+    },
+  };
+}
 
 // ── Demo / mock data ─────────────────────────────────────────────
 
@@ -32,7 +80,7 @@ const DEMO_DATA = {
 
 // ── Main Dashboard Component ─────────────────────────────────────
 
-export default function ExecutiveDashboard() {
+export default function ExecutiveDashboard({ scans = [], authEnabled = false }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
@@ -109,6 +157,26 @@ export default function ExecutiveDashboard() {
           <div className="mb-8 sm:mb-10">
             <CommandCenterHero loading={loading} />
           </div>
+
+          {/* ── Your real scans (live data from your account) ────── */}
+          {authEnabled && (
+            <div className="mb-8 sm:mb-10">
+              <MyScans scans={scans} />
+            </div>
+          )}
+
+          {/* Everything below is sample data — clearly separated from the
+              real per-account scans above. */}
+          {authEnabled && (
+            <div className="mb-4 flex items-center gap-2">
+              <span className="rounded-md bg-muted/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Sample data
+              </span>
+              <span className="text-xs text-muted-foreground">
+                The panels below are a product preview, not your account data.
+              </span>
+            </div>
+          )}
 
           {loading ? (
             <DashboardSkeleton />

@@ -20,12 +20,21 @@ export function getSupabaseServerClient({ req, res }) {
         }));
       },
       setAll(cookiesToSet) {
-        res.setHeader(
-          "Set-Cookie",
-          cookiesToSet.map(({ name, value, options }) =>
+        // Preserve any Set-Cookie headers already queued on the response —
+        // assigning directly would clobber them (e.g. a refreshed session
+        // dropping an unrelated cookie set earlier in the request).
+        const existing = res.getHeader("Set-Cookie");
+        const prior = Array.isArray(existing)
+          ? existing
+          : existing
+          ? [existing]
+          : [];
+        res.setHeader("Set-Cookie", [
+          ...prior,
+          ...cookiesToSet.map(({ name, value, options }) =>
             serializeCookieHeader(name, value, options)
-          )
-        );
+          ),
+        ]);
       },
     },
   });

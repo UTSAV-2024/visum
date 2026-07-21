@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { scanUrl } from "../lib/api";
+import { scanUrl, persistScan } from "../lib/api";
 import { track, getScoreBucket } from "../lib/analytics";
 import { Container } from "./container";
 import { EASE_OUT_EXPO } from "./motion";
@@ -152,6 +152,9 @@ export function Hero({ onScanStart, onScanEnd }) {
       });
       // Store scan data directly — results page reads this immediately
       sessionStorage.setItem("visum_result", JSON.stringify(data));
+      // Persist so it appears in the signed-in user's scan history.
+      // Fire-and-forget: never let this block or break the result flow.
+      void persistScan(data);
     } catch (err) {
       const message =
         err.message || "Scan failed. This site might be blocking our crawler. Try another URL.";

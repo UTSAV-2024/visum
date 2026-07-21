@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerClient } from "../../lib/supabase/server";
 
-// Lazy-init Supabase client: never crashes at module-import time.
+// Lazy-init Supabase admin client: never crashes at module-import time.
 // If credentials are missing, db() returns null and handlers degrade gracefully.
 let _supabase = null;
 
@@ -24,13 +25,39 @@ function getSupabase() {
   }
 }
 
+/**
+ * Resolve the signed-in user from the request cookies, if any.
+ * getUser() validates the JWT against the auth server — never trust a user id
+ * sent in the request body.
+ */
+async function getAuthedUser(req, res) {
+  try {
+    const authClient = getSupabaseServerClient({ req, res });
+    if (!authClient) return null;
+    const { data, error } = await authClient.auth.getUser();
+    if (error) return null;
+    return data?.user ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { scan_id, url, email, total_score, band, checks, scan_time_ms } = req.body;
+  const { scan_id, url, email, total_score, band, checks, scan_time_ms } = req.body || {};
 
-  if (!email || !url || typeof total_score !== "number") {
+  if (!url || typeof total_score !== "number") {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // user_id comes from the verified session only — never from the request body.
+  const user = await getAuthedUser(req, res);
+  const resolvedEmail = (email || user?.email || "").toLowerCase().trim() || null;
+
+  // Require some way to attribute the scan: a signed-in user or an email.
+  if (!user && !resolvedEmail) {
+    return res.status(400).json({ error: "An email or a signed-in session is required" });
   }
 
   const supabase = getSupabase();
@@ -41,12 +68,12 @@ export default async function handler(req, res) {
     });
   }
 
-  // Update or insert scan record by scan_id
   const { error } = await supabase.from("scans").upsert(
     {
       scan_id,
       url,
-      email: email.toLowerCase().trim(),
+      email: resolvedEmail,
+      user_id: user?.id ?? null,
       total_score,
       band,
       checks,
@@ -61,5 +88,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Failed to save scan data" });
   }
 
-  res.status(200).json({ ok: true });
+  res.status(200).json({ ok: true, saved_for_user: !!user });
 }
