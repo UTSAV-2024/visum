@@ -90,6 +90,18 @@ async def run_scan(crawl_data: dict) -> ScanResult:
     band, msg = get_band(total)
     cta = get_upgrade_cta(list(checks), total)
 
+    # A normalised score over a subset of checks must say so. Without this, a
+    # scan where the headless browser was unavailable reports a confident
+    # "100/100 — Excellent" while a quarter of the checks silently never ran.
+    unmeasured = [c for c in checks if not c.measured]
+    if unmeasured:
+        names = ", ".join(c.name for c in unmeasured)
+        msg = (
+            f"{msg} Note: {len(unmeasured)} of {len(checks)} checks could not be "
+            f"measured ({names}) and were excluded from this score, so it "
+            f"reflects only the {len(measured_checks)} checks we could run."
+        )
+
     return ScanResult(
         url=url,
         total_score=total,
@@ -99,4 +111,5 @@ async def run_scan(crawl_data: dict) -> ScanResult:
         scan_time_ms=int((time.time() - t0) * 1000),
         timestamp=datetime.now(timezone.utc).isoformat(),
         upgrade_cta=cta,
+        unmeasured_count=len(unmeasured),
     )
