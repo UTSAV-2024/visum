@@ -262,3 +262,35 @@ async def test_speed_no_data():
     assert result.partial is False
     assert result.score == 0
     assert "Not measured" in result.finding
+
+
+@pytest.mark.asyncio
+async def test_speed_real_cdn_timings_score_full_marks():
+    """Regression: a genuinely fast CDN-hosted site must be able to score 10/10.
+
+    The crawler used to compute load_ms *after* its own 2s hydration wait, so
+    every site was charged +2000ms and the `load_ms <= 2000` tier was
+    unreachable — no site could ever score full marks. These are the real
+    Navigation Timing values measured for visum-eight.vercel.app.
+    """
+    result = await check_speed({"ttfb_ms": 117, "load_ms": 806})
+    assert result.score == 10
+    assert result.passed is True
+    assert result.measured is True
+
+
+def test_crawler_excludes_its_own_hydration_wait():
+    """The hydration wait is our instrumentation cost, not the site's load time.
+
+    Guards the two things that made the old measurement wrong: the wait must be
+    a named constant, and the wall-clock fallback must subtract it.
+    """
+    from app import crawler as crawler_mod
+    import inspect
+
+    assert crawler_mod.HYDRATION_WAIT_MS > 0
+    source = inspect.getsource(crawler_mod)
+    # wall-clock fallback subtracts our own wait
+    assert "- HYDRATION_WAIT_MS" in source
+    # timings come from the browser, not from wall-clock around our sleep
+    assert "getEntriesByType('navigation')" in source
