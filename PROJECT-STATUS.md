@@ -35,7 +35,8 @@ page load speed.
 
 - ✅ Scanner backend is functional and honest (421 tests passing).
 - ✅ Marketing site + scan result experience are polished.
-- ✅ Visum dogfoods to **100/100** on its own scanner in production (verified against https://visum-eight.vercel.app — every check maxed).
+- ✅ Visum dogfoods to **100/100** on its own scanner (verified against https://visum-eight.vercel.app with all 8 checks running).
+- ⚠️ **The deployed Render backend cannot run 2 of the 8 checks** — Playwright/Chromium won't launch there, so every production scan silently omits JavaScript Rendering and Page Load Speed. Fix committed (Docker + Playwright image); needs a Render redeploy.
 - ✅ Email/password **authentication** is built (opt-in via Supabase env vars).
 - ⚠️ The "product dashboard" (analytics, insights, competitors, etc.) is **sample data**, gated behind "preview" banners — not yet wired to real per-user data.
 - ⚠️ Auth exists but the dashboard doesn't yet show a signed-in user's **own** scans.

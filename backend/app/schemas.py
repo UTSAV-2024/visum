@@ -29,6 +29,7 @@ class ScanResult(BaseModel):
     scan_time_ms: int
     timestamp:    str
     upgrade_cta:  str        # personalised upgrade prompt
+    unmeasured_count: int = 0  # checks excluded from the score (tooling unavailable)
     verification: Optional[dict] = None  # verification metadata (validation status, evidence checks)
  
 class ScanRequest(BaseModel):

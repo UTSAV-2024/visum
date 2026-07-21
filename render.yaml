@@ -1,16 +1,21 @@
 # render.yaml - Render Blueprint configuration for Visum backend
+#
+# Runs on Docker rather than Render's native Python runtime. This is required,
+# not a preference: Playwright's Chromium needs system shared libraries
+# (libnss3, libatk, libgbm, ...) that can only be installed as root. On the
+# native runtime `playwright install chromium` downloads the browser but it
+# cannot launch, so the JavaScript Rendering and Page Load Speed checks silently
+# reported "not measured" on every production scan. The Playwright base image
+# ships the browser and its dependencies already.
 services:
   - type: web
     name: visum-backend
-    env: python
-    buildCommand: pip install -r requirements.txt && python -m playwright install chromium 2>&1
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    rootDir: backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
         sync: false
       - key: ALLOWED_ORIGINS
         value: http://localhost:3000,https://visum-eight.vercel.app
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/project/.playwright

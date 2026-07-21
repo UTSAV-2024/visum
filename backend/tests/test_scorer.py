@@ -69,6 +69,32 @@ async def test_unmeasured_checks_excluded_from_total():
 
 
 @pytest.mark.asyncio
+async def test_unmeasured_checks_are_disclosed_in_the_headline():
+    """A normalised score over a subset of checks must say so.
+
+    Regression: production (Playwright unavailable on Render) returned a
+    confident "100/100 - Excellent" while 2 of 8 checks silently never ran. The
+    per-check cards said "not measured", but nothing in the headline did.
+    """
+    result = await run_scan(_base_crawl_data(js_rendered=False, performance={}))
+
+    assert result.unmeasured_count == 2
+    assert "could not be measured" in result.band_message
+    assert "JavaScript Rendering" in result.band_message
+    assert "Page Load Speed" in result.band_message
+
+
+@pytest.mark.asyncio
+async def test_fully_measured_scan_has_no_disclosure_noise():
+    """When everything was measured, don't clutter the message with a caveat."""
+    result = await run_scan(
+        _base_crawl_data(js_rendered=True, performance={"ttfb_ms": 117, "load_ms": 806})
+    )
+    assert result.unmeasured_count == 0
+    assert "could not be measured" not in result.band_message
+
+
+@pytest.mark.asyncio
 async def test_unmeasured_never_scores_worse_than_counting_zeros():
     """Excluding an unmeasured check must never score worse than the naive
     alternative of counting it as an outright failure (phantom zero)."""
