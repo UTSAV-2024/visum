@@ -20,13 +20,20 @@ export function AuthShell({
 
       <div className="relative w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
+          {/* The sign-in screen is where the logo stands on its own, so it gets
+              the full-colour mark and the tagline. */}
           <Link
             href="/"
-            className="mb-6 inline-flex items-center gap-2 text-foreground no-underline"
+            className="mb-7 inline-flex flex-col items-center gap-2.5 text-foreground no-underline"
             aria-label="Visum home"
           >
-            <Logo className="h-7 w-7 text-accent" />
-            <span className="text-lg font-bold tracking-tight">Visum</span>
+            <Logo variant="brand" className="h-11 w-11" />
+            <span className="flex flex-col items-center">
+              <span className="text-lg font-bold uppercase tracking-[0.22em]">Visum</span>
+              <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.18em] text-accent">
+                AI visibility. Real impact.
+              </span>
+            </span>
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-foreground text-balance">
             {title}

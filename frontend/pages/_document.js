@@ -98,7 +98,8 @@ export default function Document() {
         {/* Icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-        <link rel="apple-touch-icon" href="/icon.svg" sizes="any" type="image/svg+xml" />
+        {/* iOS ignores SVG here and falls back to a screenshot of the page. */}
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <link rel="manifest" href="/site.webmanifest" />
 
         {/* Open Graph */}
