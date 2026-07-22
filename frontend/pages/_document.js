@@ -68,7 +68,7 @@ export default function Document() {
                     "@type": "Offer",
                     price: "0",
                     priceCurrency: "USD",
-                    description: "Free scan, no account required",
+                    description: "Free account, 3 free scans",
                   },
                   description:
                     "Runs 8 technical checks (robots.txt, JSON-LD, llms.txt, MCP endpoint, JavaScript rendering, meta tags, sitemap, page speed) and returns a 0–100 AI-visibility score with a prioritized fix list.",
@@ -85,7 +85,7 @@ export default function Document() {
                     "@type": "Offer",
                     price: "0",
                     priceCurrency: "USD",
-                    description: "Free scan, no account required",
+                    description: "Free account, 3 free scans",
                   },
                   description:
                     "Scans any public website the way AI crawlers do and returns a 0–100 AI-visibility score with prioritized, per-check fixes.",

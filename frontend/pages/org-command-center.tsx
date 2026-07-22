@@ -14,6 +14,7 @@ import { SiteInspector } from "../components/org-command-center/site-inspector";
 import { GlobalMap } from "../components/org-command-center/global-map";
 import { ActivityTimeline } from "../components/org-command-center/activity-timeline";
 import { ExecutiveSummary } from "../components/org-command-center/executive-summary";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -295,3 +296,8 @@ export default function OrgCommandCenter() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

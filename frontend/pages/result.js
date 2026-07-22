@@ -13,6 +13,7 @@ import { Timeline } from "../components/scan-results/timeline";
 import { ScanResultsSkeleton } from "../components/scan-results/loading-skeleton";
 import { cn } from "../lib/utils";
 import { track, getScoreBucket } from "../lib/analytics";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Check categorization helpers ────────────────────────────────
 
@@ -54,88 +55,34 @@ function ErrorState({ message }) {
   );
 }
 
-// ── Email Capture ───────────────────────────────────────────────
+// ── Saved-to-account confirmation ───────────────────────
 
-function EmailCapture({ result }) {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    const trimmed = email.trim();
-    if (!trimmed) { setError("Enter your email."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    setError("");
-    setSaving(true);
-    try {
-      const res = await fetch("/api/save-scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scan_id: result.scan_id || crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          url: result.url, email: trimmed,
-          total_score: result.total_score, band: result.band,
-          checks: result.checks,
-          scan_time_ms: result.scan_time_ms || 0,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to save");
-      setSaved(true);
-      track("email_captured", { url: result.url, score: result.total_score, source: "result_page" });
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (saved) {
-    return (
-      <div className="rounded-2xl border border-border bg-card p-6 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 mb-3">
-          <svg className="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <h3 className="text-base font-bold text-foreground">Report Saved</h3>
-        <p className="text-xs text-muted-foreground mt-1">We'll send your report and future monitoring updates to your email.</p>
-      </div>
-    );
-  }
-
+/*
+  Scans are recorded against the signed-in account the moment they finish, so
+  there is nothing left to capture here — this states where the report went
+  and how to get back to it.
+*/
+function SavedToAccount() {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex flex-col sm:flex-row gap-4 items-start">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/10">
+          <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+          </svg>
+        </span>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-foreground">Save Your Report</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Get premium features — free. Save reports, weekly monitoring, PDF export.</p>
+          <h3 className="text-sm font-bold text-foreground">Saved to your account</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            This report is in your scan history. Re-scan after a fix to see the score move.
+          </p>
         </div>
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto shrink-0">
-          <input
-            type="email" value={email}
-            onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
-            placeholder="you@example.com" disabled={saving}
-            className="h-9 w-full sm:w-48 rounded-lg border border-border bg-secondary/50 px-3 text-xs text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent"
-            aria-invalid={!!error}
-          />
-          <button
-            type="submit" disabled={saving || !email.trim()}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:opacity-60"
-          >
-            {saving ? (
-              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : "Save"}
-          </button>
-          {error && <p className="w-full text-xs font-medium text-destructive" role="alert">{error}</p>}
-        </form>
+        <Link
+          href="/dashboard"
+          className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card px-4 text-xs font-semibold text-foreground no-underline transition-all hover:bg-muted/20"
+        >
+          View scan history
+        </Link>
       </div>
     </div>
   );
@@ -382,8 +329,8 @@ export default function Result() {
               </details>
             )}
 
-            {/* Email capture */}
-            <EmailCapture result={result} />
+            {/* Where the report went */}
+            <SavedToAccount />
 
             {/* Bottom actions */}
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pb-8">
@@ -440,3 +387,8 @@ export default function Result() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

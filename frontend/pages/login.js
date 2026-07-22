@@ -3,16 +3,19 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
 import { AuthShell } from "../components/auth/auth-shell";
+import { GoogleButton, AuthDivider } from "../components/auth/google-button";
 import { getSupabaseBrowserClient } from "../lib/supabase/client";
 import { isAuthEnabled } from "../lib/config";
 import { track } from "../lib/posthog";
+import { safeNext } from "../lib/safe-next";
 
-function safeNext(next) {
-  // Only allow same-origin relative paths — never an absolute/external URL.
-  if (typeof next !== "string") return "/dashboard";
-  if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard";
-  return next;
-}
+// Reasons the OAuth callback can bounce someone back here, in plain English.
+const CALLBACK_ERRORS = {
+  oauth_denied: "Google sign-in was cancelled.",
+  missing_code: "That sign-in link is incomplete. Please try again.",
+  exchange_failed: "That sign-in link has expired. Please try again.",
+  auth_unavailable: "Authentication is not configured yet. Please try again later.",
+};
 
 export default function Login() {
   const router = useRouter();
@@ -20,6 +23,10 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const next = safeNext(router.query.next);
+  const callbackError = CALLBACK_ERRORS[router.query.error];
+  const shownError = error || callbackError || "";
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -48,7 +55,7 @@ export default function Login() {
         return;
       }
       track("login_success", {});
-      router.replace(safeNext(router.query.next));
+      router.replace(next);
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
@@ -67,7 +74,10 @@ export default function Login() {
         footer={
           <>
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-medium text-accent hover:underline">
+            <Link
+              href={`/signup?next=${encodeURIComponent(next)}`}
+              className="font-medium text-accent hover:underline"
+            >
               Create one
             </Link>
           </>
@@ -78,6 +88,10 @@ export default function Login() {
             Authentication isn&apos;t configured on this deployment yet.
           </div>
         )}
+
+        <GoogleButton next={next} disabled={!isAuthEnabled} onError={setError} />
+
+        <AuthDivider />
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
           <div>
@@ -122,9 +136,9 @@ export default function Login() {
             />
           </div>
 
-          {error && (
+          {shownError && (
             <p className="text-sm font-medium text-destructive" role="alert">
-              {error}
+              {shownError}
             </p>
           )}
 

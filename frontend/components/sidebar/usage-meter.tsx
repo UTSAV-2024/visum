@@ -1,27 +1,85 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, HardDrive, ScanLine } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useSidebar } from "./sidebar-context";
-import type { UsageData } from "./types";
+import { useAccount } from "../../lib/account-context";
+import { formatBytes } from "../../lib/plans";
 
-const MOCK_USAGE: UsageData = {
-  storageUsed: 2.4,
-  storageLimit: 10,
-  scansUsed: 142,
-  scansLimit: 500,
-};
-
-interface UsageMeterProps {
-  usage?: UsageData;
+/** Bar colour tracks how close to the limit you are. */
+function barTone(pct: number) {
+  if (pct >= 90) return "bg-red-500";
+  if (pct >= 70) return "bg-orange-500";
+  return "bg-accent";
 }
 
-export function UsageMeter({ usage = MOCK_USAGE }: UsageMeterProps) {
-  const { expanded } = useSidebar();
+function pctOf(used: number, limit: number) {
+  if (!limit || limit <= 0) return 0;
+  return Math.min(Math.round((used / limit) * 100), 100);
+}
 
-  const storagePct = Math.round((usage.storageUsed / usage.storageLimit) * 100);
-  const scansPct = Math.round((usage.scansUsed / usage.scansLimit) * 100);
+function formatRenewal(iso?: string | null) {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function Meter({
+  icon,
+  label,
+  value,
+  pct,
+  delay = 0,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  pct: number;
+  delay?: number;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-[10px] text-muted-foreground/60">{label}</span>
+        </div>
+        <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
+          {value}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-muted/20 overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.8, ease: "easeOut", delay }}
+          className={cn("h-full rounded-full", barTone(pct))}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Real usage for the signed-in account: scans spent against the plan's
+ * allowance, and storage consumed by the scans actually kept.
+ */
+export function UsageMeter() {
+  const { expanded } = useSidebar();
+  const { account, loading } = useAccount();
+
+  const subscription = account?.subscription;
+  const usage = account?.usage;
+
+  const scansUsed = usage?.scansUsed ?? 0;
+  const scanLimit = subscription?.scanLimit ?? 0;
+  const storageUsed = usage?.storageUsedBytes ?? 0;
+  const storageLimit = subscription?.storageLimitBytes ?? 0;
+  const renewal = formatRenewal(subscription?.renewalDate);
+  const canUpgrade = (subscription?.tier ?? "free") !== "ultimate";
 
   return (
     <motion.div
@@ -30,75 +88,59 @@ export function UsageMeter({ usage = MOCK_USAGE }: UsageMeterProps) {
       className="overflow-hidden"
     >
       <div className="space-y-3 px-3 py-2">
-        {/* Storage */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <HardDrive className="w-3 h-3 text-muted-foreground/60" />
-              <span className="text-[10px] text-muted-foreground/60">Storage</span>
-            </div>
-            <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
-              {usage.storageUsed}GB / {usage.storageLimit}GB
-            </span>
+        {!account ? (
+          // Loading, or a deployment without auth configured — show inert
+          // placeholders rather than numbers we can't stand behind.
+          <div className="space-y-3">
+            <div className="h-1.5 rounded-full bg-muted/20" aria-hidden="true" />
+            <div className="h-1.5 rounded-full bg-muted/20" aria-hidden="true" />
+            <p className="text-[10px] text-muted-foreground/50">
+              {loading ? "Loading usage…" : "Sign in to see your usage"}
+            </p>
           </div>
-          <div className="h-1.5 rounded-full bg-muted/20 overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${storagePct}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className={cn(
-                "h-full rounded-full",
-                storagePct > 90
-                  ? "bg-red-500"
-                  : storagePct > 70
-                  ? "bg-orange-500"
-                  : "bg-accent"
-              )}
+        ) : (
+          <>
+            <Meter
+              icon={<HardDrive className="w-3 h-3 text-muted-foreground/60" />}
+              label="Storage"
+              value={`${formatBytes(storageUsed)} / ${formatBytes(storageLimit)}`}
+              pct={pctOf(storageUsed, storageLimit)}
             />
-          </div>
-        </div>
 
-        {/* Scans */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <ScanLine className="w-3 h-3 text-muted-foreground/60" />
-              <span className="text-[10px] text-muted-foreground/60">Scans</span>
-            </div>
-            <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
-              {usage.scansUsed} / {usage.scansLimit}
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted/20 overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${scansPct}%` }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-              className={cn(
-                "h-full rounded-full",
-                scansPct > 90
-                  ? "bg-red-500"
-                  : scansPct > 70
-                  ? "bg-orange-500"
-                  : "bg-accent"
-              )}
+            <Meter
+              icon={<ScanLine className="w-3 h-3 text-muted-foreground/60" />}
+              label="Scans"
+              value={`${scansUsed} / ${scanLimit}`}
+              pct={pctOf(scansUsed, scanLimit)}
+              delay={0.1}
             />
-          </div>
-        </div>
 
-        {/* Plan + Upgrade */}
-        <div className="flex items-center justify-between pt-1">
-          <div>
-            <p className="text-[10px] font-medium text-foreground">Pro Plan</p>
-            <p className="text-[9px] text-muted-foreground/60">Active</p>
-          </div>
-          <button
-            className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent hover:text-accent/80 transition-colors"
-          >
-            Upgrade
-            <ArrowUpRight className="w-3 h-3" />
-          </button>
-        </div>
+            {/* Plan + Upgrade */}
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                <p className="text-[10px] font-medium text-foreground">
+                  {subscription?.planName} Plan
+                </p>
+                <p className="text-[9px] capitalize text-muted-foreground/60">
+                  {subscription?.status === "active"
+                    ? renewal
+                      ? `Renews ${renewal}`
+                      : "Active"
+                    : subscription?.status?.replace("_", " ")}
+                </p>
+              </div>
+              {canUpgrade && (
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent no-underline transition-colors hover:text-accent/80"
+                >
+                  Upgrade
+                  <ArrowUpRight className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Divider */}

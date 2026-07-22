@@ -17,6 +17,7 @@ import { LiveConnections } from "../components/hosted-mcp/live-connections";
 import { LogsPanel } from "../components/hosted-mcp/logs-panel";
 import { AuthenticationPanel } from "../components/hosted-mcp/authentication-panel";
 import { MonitoringPanel } from "../components/hosted-mcp/monitoring-panel";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -233,3 +234,8 @@ export default function HostedMCP() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

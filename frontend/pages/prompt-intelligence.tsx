@@ -14,6 +14,7 @@ import { InsightsPanel } from "../components/prompt-intelligence/insights-panel"
 import { LiveActivity } from "../components/prompt-intelligence/live-activity";
 import { EngineComparison } from "../components/prompt-intelligence/engine-comparison";
 import { ContentGaps } from "../components/prompt-intelligence/content-gaps";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -295,3 +296,8 @@ export default function PromptIntelligence() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

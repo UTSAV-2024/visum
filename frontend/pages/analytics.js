@@ -16,6 +16,7 @@ import { InsightsPanel } from "../components/analytics/insights-panel";
 import { AnalyticsSkeleton } from "../components/analytics/loading-skeleton";
 import { cn } from "../lib/utils";
 import { track } from "../lib/analytics";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Status indicator ─────────────────────────────────────────────
 
@@ -249,3 +250,8 @@ export default function AiAnalytics() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

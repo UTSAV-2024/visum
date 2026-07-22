@@ -22,6 +22,7 @@ import { AIProjectManager } from "../components/optimization-workspace/ai-projec
 import { ProgressPanel } from "../components/optimization-workspace/progress-panel";
 import { DependencyGraph } from "../components/optimization-workspace/dependency-graph";
 import { ActivityFeed } from "../components/optimization-workspace/activity-feed";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -372,3 +373,8 @@ export default function OptimizationWorkspace() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();
