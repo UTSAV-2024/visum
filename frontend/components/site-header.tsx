@@ -6,6 +6,7 @@ import { Logo } from "./logo";
 import { Container } from "./container";
 import { isAuthEnabled } from "../lib/config";
 import { useAuth } from "../lib/auth-context";
+import { AccountMenu } from "./auth/account-menu";
 import { SCAN_NEXT } from "../lib/safe-next";
 
 const navLinks = [
@@ -72,14 +73,16 @@ export function SiteHeader() {
 
           {/* CTA — right */}
           <div className="flex shrink-0 items-center gap-2">
+            {/* Marketing pages are statically served, so the session is only
+                known once the client resolves it. Holding the space until then
+                avoids flashing "Sign in" at someone who is already signed in. */}
             {isAuthEnabled &&
-              (signedIn ? (
-                <Link
-                  href="/dashboard"
-                  className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground no-underline transition-colors hover:text-foreground sm:inline-flex"
-                >
-                  Dashboard
-                </Link>
+              (loading ? (
+                <span className="hidden h-9 w-20 sm:block" aria-hidden="true" />
+              ) : signedIn ? (
+                // No sidebar out here, so this is the only way to reach your
+                // account — or sign out — from the home page.
+                <AccountMenu />
               ) : (
                 <Link
                   href="/login"
