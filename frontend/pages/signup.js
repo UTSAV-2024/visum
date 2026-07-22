@@ -3,9 +3,11 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
 import { AuthShell } from "../components/auth/auth-shell";
+import { GoogleButton, AuthDivider } from "../components/auth/google-button";
 import { getSupabaseBrowserClient } from "../lib/supabase/client";
 import { isAuthEnabled } from "../lib/config";
 import { track } from "../lib/posthog";
+import { safeNext } from "../lib/safe-next";
 
 const MIN_PASSWORD = 8;
 
@@ -17,6 +19,10 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
+
+  // Carried through sign-up so someone who clicked "Run a scan" lands back on
+  // the scan form once their account exists.
+  const next = safeNext(router.query.next);
 
   function validate() {
     if (!email.trim()) return "Email is required.";
@@ -51,7 +57,7 @@ export default function Signup() {
         options: {
           emailRedirectTo:
             typeof window !== "undefined"
-              ? `${window.location.origin}/dashboard`
+              ? `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`
               : undefined,
         },
       });
@@ -69,7 +75,7 @@ export default function Signup() {
         return;
       }
       // Auto-confirm enabled → straight into the app.
-      router.replace("/dashboard");
+      router.replace(next);
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
@@ -128,7 +134,10 @@ export default function Signup() {
         footer={
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-accent hover:underline">
+            <Link
+              href={`/login?next=${encodeURIComponent(next)}`}
+              className="font-medium text-accent hover:underline"
+            >
               Sign in
             </Link>
           </>
@@ -139,6 +148,15 @@ export default function Signup() {
             Authentication isn&apos;t configured on this deployment yet.
           </div>
         )}
+
+        <GoogleButton
+          next={next}
+          label="Sign up with Google"
+          disabled={!isAuthEnabled}
+          onError={setError}
+        />
+
+        <AuthDivider />
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
           <div>

@@ -11,6 +11,7 @@ import { ReportsSkeleton } from "../components/reports/loading-skeleton";
 import { cn } from "../lib/utils";
 import { track } from "../lib/analytics";
 import { SCAN_HISTORY } from "../components/reports/data";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function Reports() {
   const [loading, setLoading] = useState(true);
@@ -119,3 +120,8 @@ export default function Reports() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

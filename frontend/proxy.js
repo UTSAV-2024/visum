@@ -21,6 +21,12 @@ const PROTECTED_PREFIXES = [
   "/competitors",
   "/reports",
   "/team",
+  "/result",
+  "/crawl-explorer",
+  "/hosted-mcp",
+  "/org-command-center",
+  "/optimization-workspace",
+  "/prompt-intelligence",
 ];
 
 const AUTH_PAGES = ["/login", "/signup"];
@@ -50,8 +56,18 @@ export function proxy(request) {
   }
 
   if (AUTH_PAGES.includes(pathname) && signedIn) {
+    const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    // Honour ?next= so an already-signed-in visitor who clicked "Run a scan"
+    // still lands on the scan form. Same-origin paths only.
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      const [path, hash] = next.split("#");
+      url.pathname = path || "/";
+      url.hash = hash ? `#${hash}` : "";
+    } else {
+      url.pathname = "/dashboard";
+      url.hash = "";
+    }
     url.search = "";
     return NextResponse.redirect(url);
   }
@@ -69,6 +85,12 @@ export const config = {
     "/competitors/:path*",
     "/reports/:path*",
     "/team/:path*",
+    "/result/:path*",
+    "/crawl-explorer/:path*",
+    "/hosted-mcp/:path*",
+    "/org-command-center/:path*",
+    "/optimization-workspace/:path*",
+    "/prompt-intelligence/:path*",
     "/login",
     "/signup",
   ],

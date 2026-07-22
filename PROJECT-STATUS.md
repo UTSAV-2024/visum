@@ -1,6 +1,6 @@
 # Visum — Project Status
 
-_Last updated: 2026-07-20_
+_Last updated: 2026-07-22_
 
 A living snapshot of where Visum is, what's missing, and what to build next.
 Pair this with [IMPROVEMENT-CHECKLIST.md](IMPROVEMENT-CHECKLIST.md) (the
@@ -27,7 +27,8 @@ Visum scans any public website for **AI-agent readiness** — how well AI system
 llms.txt, MCP endpoint, JavaScript rendering, meta/Open Graph tags, sitemap.xml,
 page load speed.
 
-**Core funnel:** landing → scan a URL → email gate → full result report.
+**Core funnel:** landing → sign up (email or Google) → scan a URL → full result
+report, against a 3-scan free allowance.
 
 ---
 
@@ -37,9 +38,17 @@ page load speed.
 - ✅ Marketing site + scan result experience are polished.
 - ✅ Visum dogfoods to **100/100** on its own scanner (verified against https://visum-eight.vercel.app with all 8 checks running).
 - ⚠️ **The deployed Render backend cannot run 2 of the 8 checks** — Playwright/Chromium won't launch there, so every production scan silently omits JavaScript Rendering and Page Load Speed. Fix committed (Docker + Playwright image); needs a Render redeploy.
-- ✅ Email/password **authentication** is built (opt-in via Supabase env vars).
-- ⚠️ The "product dashboard" (analytics, insights, competitors, etc.) is **sample data**, gated behind "preview" banners — not yet wired to real per-user data.
-- ⚠️ Auth exists but the dashboard doesn't yet show a signed-in user's **own** scans.
+- ✅ **Authentication is required to scan.** Email/password and Google OAuth via
+  Supabase; every app and scan route is enforced server-side in
+  `getServerSideProps`, not just in the browser.
+- ✅ **Accounts are real.** Profile, plan, quota, storage and scan history all
+  come from Supabase. Free accounts get 3 lifetime scans; Pro ($15) 30 a week;
+  Ultimate ($70) 100 a week, with weekly resets driven by the renewal date.
+- ⚠️ The "product dashboard" panels (analytics, insights, competitors, etc.) are
+  still **sample data** behind "preview" banners. The user's own scans, plan and
+  usage are real.
+- ⚠️ No payment provider is connected yet — `/api/subscription/upgrade` does the
+  full provisioning but refuses to grant a plan without one.
 
 ---
 

@@ -12,7 +12,7 @@ const steps = [
   {
     n: "1",
     title: "Paste your address",
-    desc: "Any public site — Shopify, WordPress, Webflow, or custom. No account, no email.",
+    desc: "Any public site — Shopify, WordPress, Webflow, or custom. Free account, three scans to start.",
   },
   {
     n: "2",
@@ -76,15 +76,15 @@ const faqs = [
   },
   {
     q: "How does the scan work?",
-    a: "Enter any public URL, and we run 8 automated checks against your website. We test AI bot permissions, structured data, llms.txt files, MCP endpoints, JavaScript rendering, meta tags, sitemap health, and page speed. Results are ready in under 30 seconds.",
+    a: "Sign in, enter any public URL, and we run 8 automated checks against your website. We test AI bot permissions, structured data, llms.txt files, MCP endpoints, JavaScript rendering, meta tags, sitemap health, and page speed. Results are ready in under 30 seconds.",
   },
   {
     q: "Is the scan free?",
-    a: "Yes, the initial scan is completely free. You get a full AI readiness score and detailed findings for any public website. No signup is required to start a scan.",
+    a: "Every account starts with 3 free scans — a full AI readiness score and detailed findings for any public website, at no cost. Paid plans add a weekly scan allowance for sites you monitor continuously.",
   },
   {
     q: "Do I need to sign up?",
-    a: "No signup is needed to run a scan. We ask for your email only when you want to unlock the full detailed report and receive a copy.",
+    a: "Yes — a free account takes a moment and gives you 3 scans. It's what lets us keep your scan history, track scores over time, and let you re-scan after a fix. You can sign up with email or continue with Google.",
   },
   {
     q: "What AI systems do you test for?",

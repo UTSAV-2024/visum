@@ -1,15 +1,52 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { Logo } from "./logo";
 import { Container } from "./container";
 import { isAuthEnabled } from "../lib/config";
+import { useAuth } from "../lib/auth-context";
+import { SCAN_NEXT } from "../lib/safe-next";
 
 const navLinks = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "The 8 checks", href: "#checks" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "The 8 checks", href: "/#checks" },
+  { label: "Pricing", href: "/pricing" },
 ];
 
+/** Scroll the scan form into view and put the cursor in it. */
+function focusScanForm() {
+  const target = document.getElementById("scan-url") || document.getElementById("scan");
+  if (!target) return false;
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  requestAnimationFrame(() => {
+    document.getElementById("scan-url")?.focus({ preventScroll: true });
+  });
+  return true;
+}
+
 export function SiteHeader() {
+  const router = useRouter();
+  const { user, loading, authEnabled } = useAuth();
+  const signedIn = !!user;
+
+  /**
+   * "Run a scan" always ends up at the scan form.
+   *
+   * Signed out, that means signing in first — and `next` carries the
+   * destination through, so the visitor lands back on the form rather than the
+   * dashboard. Signed in, it scrolls if the form is on this page and navigates
+   * to it if it isn't.
+   */
+  function handleRunScan() {
+    if (authEnabled && !loading && !signedIn) {
+      router.push(`/login?next=${encodeURIComponent(SCAN_NEXT)}`);
+      return;
+    }
+    if (focusScanForm()) return;
+    router.push(SCAN_NEXT);
+  }
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-md">
       <Container>
@@ -23,42 +60,37 @@ export function SiteHeader() {
           {/* Nav — center */}
           <nav aria-label="Primary" className="mx-auto hidden items-center gap-8 md:flex">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm font-medium text-muted-foreground no-underline transition-colors hover:text-foreground"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
           {/* CTA — right */}
           <div className="flex shrink-0 items-center gap-2">
-            {isAuthEnabled && (
-              <Link
-                href="/login"
-                className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline-flex no-underline"
-              >
-                Sign in
-              </Link>
-            )}
+            {isAuthEnabled &&
+              (signedIn ? (
+                <Link
+                  href="/dashboard"
+                  className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground no-underline transition-colors hover:text-foreground sm:inline-flex"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground no-underline transition-colors hover:text-foreground sm:inline-flex"
+                >
+                  Sign in
+                </Link>
+              ))}
             <button
               type="button"
-              onClick={() => {
-                const target = document.getElementById("scan-url") || document.getElementById("scan");
-                if (target) {
-                  target.scrollIntoView({ behavior: "smooth", block: "center" });
-                  requestAnimationFrame(() => {
-                    const input = document.getElementById("scan-url");
-                    if (input) {
-                      requestAnimationFrame(() => {
-                        input.focus({ preventScroll: true });
-                      });
-                    }
-                  });
-                }
-              }}
+              onClick={handleRunScan}
               className="cursor-pointer rounded-lg border-0 bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-brand-200"
             >
               Run a scan

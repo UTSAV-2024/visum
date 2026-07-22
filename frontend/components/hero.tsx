@@ -1,9 +1,19 @@
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { scanUrl, persistScan } from "../lib/api";
+import { scanUrl, ScanRefusedError } from "../lib/api";
 import { track, getScoreBucket } from "../lib/analytics";
+import { useAuth } from "../lib/auth-context";
+import { useAccount } from "../lib/account-context";
+import { SCAN_NEXT } from "../lib/safe-next";
+import { OutOfScansModal } from "./quota/out-of-scans-modal";
 import { Container } from "./container";
 import { EASE_OUT_EXPO } from "./motion";
+
+// A URL typed before signing in is held here so the visitor doesn't have to
+// retype it after the round-trip through authentication.
+const PENDING_SCAN_KEY = "visum_pending_scan_url";
 
 const progressMessages = [
   { message: "Checking permissions...", pct: 15 },
@@ -81,12 +91,50 @@ function MachineEyeView() {
 }
 
 export function Hero({ onScanStart, onScanEnd }) {
+  const router = useRouter();
+  const { user, loading: authLoading, authEnabled } = useAuth();
+  const { account, applyAccount, refresh } = useAccount();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [progressIndex, setProgressIndex] = useState(0);
+  const [quotaModal, setQuotaModal] = useState(null);
   const intervalRef = useRef(null);
   const reduce = useReducedMotion();
+
+  const signedIn = !authEnabled || !!user;
+  const scansRemaining = account?.usage?.scansRemaining ?? null;
+  const outOfScans = signedIn && scansRemaining === 0;
+
+  // Restore a URL typed before signing in, and focus the form when we've been
+  // sent back here by the "Run a scan" round-trip.
+  useEffect(() => {
+    let pending = null;
+    try {
+      pending = sessionStorage.getItem(PENDING_SCAN_KEY);
+      if (pending) sessionStorage.removeItem(PENDING_SCAN_KEY);
+    } catch {
+      /* sessionStorage unavailable — nothing to restore */
+    }
+    // sessionStorage can only be read after mount, so this cannot seed
+    // useState without breaking SSR/hydration parity.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (pending) setUrl(pending);
+
+    if (window.location.hash === "#scan") {
+      document.getElementById("scan")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("scan-url")?.focus({ preventScroll: true });
+    }
+  }, []);
+
+  function sendToSignIn(pendingUrl) {
+    try {
+      if (pendingUrl) sessionStorage.setItem(PENDING_SCAN_KEY, pendingUrl);
+    } catch {
+      /* non-fatal: the visitor just retypes the URL */
+    }
+    router.push(`/login?next=${encodeURIComponent(SCAN_NEXT)}`);
+  }
 
   useEffect(() => {
     if (intervalRef.current) {
@@ -132,6 +180,25 @@ export function Hero({ onScanStart, onScanEnd }) {
       return;
     }
 
+    // Scanning is an account feature. Send the visitor to sign in and bring
+    // them straight back to this form.
+    if (authEnabled && !authLoading && !user) {
+      track("scan_blocked", { reason: "unauthenticated" });
+      sendToSignIn(trimmed);
+      return;
+    }
+
+    // The allowance we already know is spent — no point calling the server.
+    if (outOfScans) {
+      setQuotaModal({
+        tier: account?.subscription?.tier,
+        scanLimit: account?.subscription?.scanLimit,
+        scansUsed: account?.usage?.scansUsed,
+        renewalDate: account?.subscription?.renewalDate,
+      });
+      return;
+    }
+
     setError("");
     setLoading(true);
     const scanStartTime = performance.now();
@@ -150,12 +217,24 @@ export function Hero({ onScanStart, onScanEnd }) {
         duration_ms: scanTimeMs,
         score_bucket: getScoreBucket(data.result.total_score),
       });
-      // Store scan data directly — results page reads this immediately
+      // Store scan data directly — results page reads this immediately.
+      // The scan itself was already recorded server-side by /api/scan.
       sessionStorage.setItem("visum_result", JSON.stringify(data));
-      // Persist so it appears in the signed-in user's scan history.
-      // Fire-and-forget: never let this block or break the result flow.
-      void persistScan(data);
+      // The server hands back the post-scan quota, so the meter is correct
+      // immediately rather than after another round-trip.
+      applyAccount(data.account);
     } catch (err) {
+      if (err instanceof ScanRefusedError) {
+        setLoading(false);
+        if (err.status === 401) {
+          sendToSignIn(trimmed);
+          return;
+        }
+        track("scan_blocked", { reason: "quota_exhausted", url: parsed.href });
+        setQuotaModal(err.quota);
+        void refresh();
+        return;
+      }
       const message =
         err.message || "Scan failed. This site might be blocking our crawler. Try another URL.";
       setError(message);
@@ -243,7 +322,7 @@ export function Hero({ onScanStart, onScanEnd }) {
               </div>
               <motion.button
                 type="submit"
-                disabled={loading}
+                disabled={loading || outOfScans}
                 whileTap={reduce ? undefined : { scale: 0.97 }}
                 className="inline-flex h-13 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-base font-bold text-primary-foreground transition-colors hover:bg-brand-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -315,10 +394,36 @@ export function Hero({ onScanStart, onScanEnd }) {
                 </p>
               )}
 
+              {outOfScans && (
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+                  <p className="m-0 flex-1 text-[13px] text-foreground">
+                    You&apos;ve used all {account?.subscription?.scanLimit ?? 3} of your scans.
+                  </p>
+                  <Link
+                    href="/pricing"
+                    className="text-[13px] font-semibold text-primary no-underline hover:underline"
+                  >
+                    Upgrade to continue →
+                  </Link>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-muted-foreground">
-                <span>Free</span>
-                <span aria-hidden="true" className="text-border">·</span>
-                <span>No account needed</span>
+                {signedIn && scansRemaining !== null ? (
+                  <>
+                    <span>
+                      {scansRemaining} of {account?.subscription?.scanLimit ?? 3} scans left
+                    </span>
+                    <span aria-hidden="true" className="text-border">·</span>
+                    <span>{account?.subscription?.planName ?? "Free"} plan</span>
+                  </>
+                ) : (
+                  <>
+                    <span>3 free scans</span>
+                    <span aria-hidden="true" className="text-border">·</span>
+                    <span>Free account</span>
+                  </>
+                )}
                 <span aria-hidden="true" className="text-border">·</span>
                 <span>Results in ~20 seconds</span>
               </div>
@@ -343,6 +448,12 @@ export function Hero({ onScanStart, onScanEnd }) {
           </motion.div>
         </div>
       </Container>
+
+      <OutOfScansModal
+        open={!!quotaModal}
+        quota={quotaModal}
+        onClose={() => setQuotaModal(null)}
+      />
     </section>
   );
 }

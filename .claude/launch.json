@@ -9,8 +9,16 @@
       "port": 3000
     },
     {
+      "//": "The dev server has an HMR crash loop that blanks app-layout pages; verify against a production build instead (run `npm run build` first).",
+      "name": "frontend-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start"],
+      "cwd": "frontend",
+      "port": 3000
+    },
+    {
       "name": "backend",
-      "runtimeExecutable": "backend/venv/Scripts/python.exe",
+      "runtimeExecutable": "venv/Scripts/python.exe",
       "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
       "cwd": "backend",
       "port": 8000,

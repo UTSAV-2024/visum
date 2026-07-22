@@ -18,35 +18,18 @@ import { MyScans } from "../components/dashboard/my-scans";
 import { cn } from "../lib/utils";
 import { getBand } from "../lib/scan-data";
 import { track } from "../lib/analytics";
-import { getSupabaseServerClient } from "../lib/supabase/server";
-import { isAuthEnabled } from "../lib/config";
+import { withAuthRequired } from "../lib/auth-guard";
 
 /**
  * Server-side auth + real data.
  *
- * This is the enforcement boundary: an unauthenticated request never receives
- * the dashboard at all. The scans are fetched with the user's own RLS-scoped
- * client, so the database itself guarantees a user can only ever see their own
- * rows — the query has no user_id filter because RLS applies it.
- *
- * When auth isn't configured the page falls back to its previous behaviour so
- * the sample dashboard stays usable.
+ * withAuthRequired is the enforcement boundary: an unauthenticated request
+ * never receives the dashboard at all. The scans are then fetched with the
+ * user's own RLS-scoped client, so the database itself guarantees a user can
+ * only ever see their own rows — the query has no user_id filter because RLS
+ * applies it.
  */
-export async function getServerSideProps(ctx) {
-  if (!isAuthEnabled) {
-    return { props: { scans: [], authEnabled: false } };
-  }
-
-  const supabase = getSupabaseServerClient(ctx);
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  const user = userError ? null : userData?.user;
-
-  if (!user) {
-    return {
-      redirect: { destination: "/login?next=%2Fdashboard", permanent: false },
-    };
-  }
-
+export const getServerSideProps = withAuthRequired(async (ctx, { supabase }) => {
   const { data: scans, error } = await supabase
     .from("scans")
     .select("id, scan_id, url, total_score, band, checks, scan_time_ms, created_at")
@@ -57,14 +40,8 @@ export async function getServerSideProps(ctx) {
     console.error("[dashboard] failed to load scans:", error.message);
   }
 
-  return {
-    props: {
-      scans: scans ?? [],
-      authEnabled: true,
-      userEmail: user.email ?? null,
-    },
-  };
-}
+  return { props: { scans: scans ?? [] } };
+});
 
 // ── Demo / mock data ─────────────────────────────────────────────
 

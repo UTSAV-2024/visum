@@ -10,6 +10,7 @@ import { ProgressTracker } from "../components/recommendations/progress-tracker"
 import { FilterBar } from "../components/recommendations/filter-bar";
 import { AchievementSystem } from "../components/recommendations/achievement-system";
 import { RecsSkeleton } from "../components/recommendations/loading-skeleton";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function Recommendations() {
   const router = useRouter();
@@ -324,3 +325,8 @@ export default function Recommendations() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

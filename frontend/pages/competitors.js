@@ -11,6 +11,7 @@ import { FeatureComparison } from "../components/competitors/feature-comparison"
 import { RecommendationComparison } from "../components/competitors/recommendation-comparison";
 import { CompetitorsSkeleton } from "../components/competitors/loading-skeleton";
 import { YOUR_SITE, INDUSTRY_AVG, COMPETITORS } from "../components/competitors/data";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function CompetitorIntelligence() {
   const [loading, setLoading] = useState(true);
@@ -85,3 +86,8 @@ export default function CompetitorIntelligence() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

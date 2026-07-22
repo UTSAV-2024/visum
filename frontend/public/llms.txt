@@ -6,7 +6,7 @@ Visum reads any public website the way AI crawlers do — checking robots.txt pe
 
 ## Product
 
-- [Run a scan](https://visum-eight.vercel.app/): Paste a URL, get your AI-visibility score. Free, no account.
+- [Run a scan](https://visum-eight.vercel.app/): Paste a URL, get your AI-visibility score. Free account, 3 free scans.
 - [How the scan works](https://visum-eight.vercel.app/#how-it-works): The three-step flow from URL to diagnosis.
 - [The 8 checks](https://visum-eight.vercel.app/#checks): Each technical signal we test and why it matters to AI systems.
 

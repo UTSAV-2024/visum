@@ -14,7 +14,7 @@ const stats = [
   {
     value: "0",
     label: "Cost to Start",
-    detail: "No account, no credit card, no email. Just paste your URL and see your results.",
+    detail: "No credit card. Create a free account, paste your URL, and see your results.",
   },
 ];
 

@@ -9,6 +9,7 @@ import { Inspector } from "../components/crawl-explorer/inspector";
 import { CrawlLogs } from "../components/crawl-explorer/crawl-logs";
 import { AIThinking } from "../components/crawl-explorer/ai-thinking";
 import { ENGINES, CRAWL_PAGES, type CrawlPage } from "../components/crawl-explorer/data";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function CrawlExplorer() {
   const [selectedEngine, setSelectedEngine] = useState("chatgpt");
@@ -176,3 +177,8 @@ export default function CrawlExplorer() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

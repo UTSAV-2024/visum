@@ -13,6 +13,7 @@ import { WorkspaceSettings } from "../components/team/workspace-settings";
 import { OrgAnalytics } from "../components/team/org-analytics";
 import { TeamSkeleton } from "../components/team/loading-skeleton";
 import { TEAM_MEMBERS, BILLING } from "../components/team/data";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function TeamManagement() {
   const [loading, setLoading] = useState(true);
@@ -105,3 +106,8 @@ export default function TeamManagement() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();
