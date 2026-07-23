@@ -3,43 +3,20 @@ import { cn } from "../../lib/utils";
 
 interface FixedIssue {
   id: string;
-  title: string;
-  category: string;
-  fixedAt: string;
+  /** The check that now passes. */
+  name: string;
+  /** Points recovered by the fix. */
+  points: number;
 }
-
-const recentlyFixed: FixedIssue[] = [
-  {
-    id: "1",
-    title: "Added sitemap.xml reference",
-    category: "Crawlability",
-    fixedAt: "2 hours ago",
-  },
-  {
-    id: "2",
-    title: "Updated meta description",
-    category: "Meta Tags",
-    fixedAt: "Yesterday",
-  },
-  {
-    id: "3",
-    title: "Fixed Open Graph image URL",
-    category: "Meta Tags",
-    fixedAt: "2 days ago",
-  },
-  {
-    id: "4",
-    title: "Improved page load speed (3.2s → 1.8s)",
-    category: "Performance",
-    fixedAt: "3 days ago",
-  },
-];
 
 interface RecentlyFixedProps {
   className?: string;
+  /** Checks that failed on the prior scan but pass now. */
+  items?: FixedIssue[];
 }
 
-export function RecentlyFixed({ className }: RecentlyFixedProps) {
+export function RecentlyFixed({ className, items = [] }: RecentlyFixedProps) {
+  const recentlyFixed = items;
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -97,16 +74,13 @@ export function RecentlyFixed({ className }: RecentlyFixedProps) {
 
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-foreground group-hover:text-green-500 transition-colors line-clamp-1">
-                  {item.title}
+                  {item.name}
                 </p>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
                 <span className="rounded-md bg-green-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-green-500">
-                  {item.category}
-                </span>
-                <span className="text-[10px] text-muted-foreground/60">
-                  {item.fixedAt}
+                  +{item.points} pts
                 </span>
               </div>
             </div>

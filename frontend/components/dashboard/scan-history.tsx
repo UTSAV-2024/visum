@@ -6,22 +6,17 @@ interface ScanEntry {
   date: string;
   score: number;
   status: "completed" | "in_progress" | "failed";
-  changes: number;
+  /** Score delta vs the next-older scan; null for the first scan. */
+  change: number | null;
 }
-
-const scanHistory: ScanEntry[] = [
-  { id: "1", date: "Jul 17, 2026, 10:30 AM", score: 78, status: "completed", changes: 3 },
-  { id: "2", date: "Jul 16, 2026, 2:15 PM", score: 73, status: "completed", changes: 0 },
-  { id: "3", date: "Jul 15, 2026, 9:00 AM", score: 71, status: "completed", changes: 1 },
-  { id: "4", date: "Jul 13, 2026, 4:45 PM", score: 68, status: "completed", changes: 0 },
-  { id: "5", date: "Jul 10, 2026, 11:20 AM", score: 65, status: "completed", changes: 2 },
-];
 
 interface ScanHistoryProps {
   className?: string;
+  /** The account's real scans, newest first. Empty renders the empty state. */
+  history?: ScanEntry[];
 }
 
-export function ScanHistory({ className }: ScanHistoryProps) {
+export function ScanHistory({ className, history = [] }: ScanHistoryProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -29,7 +24,12 @@ export function ScanHistory({ className }: ScanHistoryProps) {
     setIsVisible(true);
   }, []);
 
+  const scanHistory = history;
   const displayed = expanded ? scanHistory : scanHistory.slice(0, 3);
+  const totalGain =
+    scanHistory.length > 1
+      ? scanHistory[0].score - scanHistory[scanHistory.length - 1].score
+      : 0;
 
   return (
     <div
@@ -56,9 +56,17 @@ export function ScanHistory({ className }: ScanHistoryProps) {
               Scan History
             </p>
           </div>
-          <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-[10px] font-bold text-accent">
-            +5 pts
-          </span>
+          {totalGain !== 0 && (
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                totalGain > 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+              )}
+            >
+              {totalGain > 0 ? "+" : ""}
+              {totalGain} pts
+            </span>
+          )}
         </div>
 
         {/* Timeline */}
@@ -69,10 +77,7 @@ export function ScanHistory({ className }: ScanHistoryProps) {
           <div className="space-y-0">
             {displayed.map((scan, idx) => {
               const isLatest = idx === 0;
-              const scoreChange =
-                idx < scanHistory.length - 1
-                  ? scan.score - scanHistory[idx + 1].score
-                  : null;
+              const scoreChange = scan.change;
 
               return (
                 <div
@@ -122,11 +127,6 @@ export function ScanHistory({ className }: ScanHistoryProps) {
                       <span className="text-[10px] text-muted-foreground/60">
                         {scan.date}
                       </span>
-                      {scan.changes > 0 && (
-                        <span className="rounded-full bg-accent/10 px-1.5 py-[1px] text-[9px] font-medium text-accent">
-                          {scan.changes} change{scan.changes !== 1 ? "s" : ""}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>

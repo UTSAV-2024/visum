@@ -155,15 +155,6 @@ export function RecCard({ rec, onToggleComplete, onApplyFix, onSelectToggle, isS
           </div>
 
           <div className="flex items-center gap-1.5">
-            <svg className="h-3.5 w-3.5 text-accent" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 1a4.5 4.5 0 00-4.5 4.5v2.5a2 2 0 00-2 2v4a2 2 0 002 2h9a2 2 0 002-2v-4a2 2 0 00-2-2v-2.5A4.5 4.5 0 0010 1zm-2.5 7V5.5a2.5 2.5 0 015 0V8h-5z" />
-            </svg>
-            <span className="text-[10px] text-muted-foreground">
-              Traffic: <span className="font-mono font-bold text-accent">+{rec.trafficImprovement}%</span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
             <svg className="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10 1a4.5 4.5 0 00-4.5 4.5v2.5a2 2 0 00-2 2v4a2 2 0 002 2h9a2 2 0 002-2v-4a2 2 0 00-2-2v-2.5A4.5 4.5 0 0010 1z" />
             </svg>

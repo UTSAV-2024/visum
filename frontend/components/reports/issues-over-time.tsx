@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
-import { HISTORICAL_ISSUES } from "./data";
 
-export function IssuesOverTime({ className }) {
+export function IssuesOverTime({ className, issues = [] }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  const unresolved = HISTORICAL_ISSUES.filter((i) => !i.resolved);
-  const resolved = HISTORICAL_ISSUES.filter((i) => i.resolved);
-  const regressions = HISTORICAL_ISSUES.filter((i) => i.severity === "critical" && !i.resolved);
+  const unresolved = issues.filter((i) => !i.resolved);
+  const resolved = issues.filter((i) => i.resolved);
+  const regressions = issues.filter((i) => i.severity === "critical" && !i.resolved);
 
   return (
     <div

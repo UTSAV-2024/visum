@@ -24,21 +24,52 @@ import {
   Gauge,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import {
-  USER,
-  VISIBILITY_SCORE,
-  EXECUTIVE_SUMMARY,
-  HIGHLIGHTS,
-  AI_ENGINES,
-  INFRASTRUCTURE,
-  RECOMMENDED_ACTIONS,
-  QUICK_ACTIONS,
-  type Highlight,
-  type AIEngineHealth,
-  type InfrastructureMetric,
-  type RecommendedAction,
-  type QuickAction,
-} from "./hero-data";
+
+// ── Shapes fed from real scan-derived data (lib/derive-from-scans.js) ──
+
+interface Highlight {
+  id: string;
+  type: "positive" | "warning" | "neutral";
+  message: string;
+  time: string;
+  href?: string;
+}
+
+interface RecommendedAction {
+  id: string;
+  title: string;
+  impact: number;
+  priority: "critical" | "high" | "medium" | "low";
+  completed?: boolean;
+  href: string;
+}
+
+export interface HeroData {
+  firstName: string;
+  domain: string;
+  score: number;
+  previousScore: number | null;
+  delta: number | null;
+  band: string;
+  health: "healthy" | "warning" | "critical";
+  lastScanLabel: string;
+  executiveSummary: string;
+  highlights: Highlight[];
+  recommendedActions: RecommendedAction[];
+}
+
+const QUICK_ACTIONS: {
+  id: string;
+  label: string;
+  icon: string;
+  href: string;
+  primary?: boolean;
+}[] = [
+  { id: "qa1", label: "Run a scan", icon: "scan", href: "/#scan", primary: true },
+  { id: "qa2", label: "View reports", icon: "chart", href: "/reports" },
+  { id: "qa3", label: "Recommendations", icon: "file", href: "/recommendations" },
+  { id: "qa4", label: "Compare competitors", icon: "globe", href: "/competitors" },
+];
 
 // ── Utility ─────────────────────────────────────────────────────
 
@@ -129,7 +160,15 @@ function HighlightIcon({ type }: { type: string }) {
 //  LEFT SECTION – Greeting + Executive Summary
 // ═════════════════════════════════════════════════════════════════
 
-function GreetingSection() {
+function GreetingSection({
+  firstName,
+  domain,
+  summary,
+}: {
+  firstName: string;
+  domain: string;
+  summary: string;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -139,21 +178,22 @@ function GreetingSection() {
     >
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-          {greeting}, {USER.firstName}.
+          {greeting}
+          {firstName ? `, ${firstName}` : ""}.
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground/70 mt-1">
-          Here&apos;s your AI presence overview for{" "}
-          <span className="font-medium text-foreground/80">{USER.domain}</span>
+          Here&apos;s your AI-readiness overview for{" "}
+          <span className="font-medium text-foreground/80">{domain}</span>
         </p>
       </div>
 
-      {/* Executive Summary */}
+      {/* Executive Summary — built from the real scan numbers */}
       <div className="relative rounded-xl border border-accent/10 bg-gradient-to-br from-accent/[0.03] to-transparent p-4">
         <div className="absolute top-3 right-3">
           <Sparkles className="h-3.5 w-3.5 text-accent/40" />
         </div>
         <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground/80 pr-6">
-          {EXECUTIVE_SUMMARY}
+          {summary}
         </p>
       </div>
     </motion.div>
@@ -164,10 +204,9 @@ function GreetingSection() {
 //  CENTERPIECE – AI Visibility Score (NO gauge — premium stat block)
 // ═════════════════════════════════════════════════════════════════
 
-function ScoreCenterpiece() {
-  const { score, previousScore, trend, periodLabel, percentile, health } = VISIBILITY_SCORE;
-  const delta = score - previousScore;
-  const isUp = delta > 0;
+function ScoreCenterpiece({ data }: { data: HeroData }) {
+  const { score, delta, band, health, lastScanLabel } = data;
+  const isUp = (delta ?? 0) > 0;
 
   return (
     <motion.div
@@ -206,43 +245,67 @@ function ScoreCenterpiece() {
 
           {/* Score details */}
           <div className="flex flex-wrap items-center gap-2.5 pb-1">
-            {/* Trend badge */}
-            <div className="inline-flex items-center gap-1 rounded-lg bg-green-500/10 px-2.5 py-1">
-              <TrendingUp className="h-3.5 w-3.5 text-green-500" />
-              <span className="text-xs font-semibold tabular-nums text-green-500">
-                {isUp ? "+" : ""}
-                {trend}
-              </span>
-            </div>
+            {/* Trend badge — only when we have a prior scan to compare against */}
+            {delta != null && (
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-lg px-2.5 py-1",
+                  isUp ? "bg-green-500/10" : delta < 0 ? "bg-red-500/10" : "bg-muted/20"
+                )}
+              >
+                <TrendingUp
+                  className={cn(
+                    "h-3.5 w-3.5",
+                    isUp ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-xs font-semibold tabular-nums",
+                    isUp ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground"
+                  )}
+                >
+                  {isUp ? "+" : ""}
+                  {delta}
+                </span>
+              </div>
+            )}
 
-            {/* Percentile */}
+            {/* Band */}
             <div className="inline-flex items-center gap-1 rounded-lg bg-accent/10 px-2.5 py-1">
               <Gauge className="h-3.5 w-3.5 text-accent" />
-              <span className="text-xs font-semibold text-accent">{percentile}</span>
+              <span className="text-xs font-semibold text-accent">{band}</span>
             </div>
 
-            {/* Period */}
+            {/* Last scan */}
             <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 px-1">
               <Clock className="h-3 w-3" />
-              <span>{periodLabel}</span>
+              <span>{lastScanLabel}</span>
             </div>
           </div>
         </div>
 
         {/* Delta bar */}
         <div className="mt-4 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground/50">Delta from last period:</span>
-            <span className={cn("font-semibold tabular-nums", isUp ? "text-green-500" : "text-red-500")}>
-              {isUp ? "+" : ""}
-              {delta} pts
-            </span>
-            {isUp ? (
-              <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
-            ) : (
-              <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
-            )}
-          </div>
+          {delta != null && (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground/50">Change from last scan:</span>
+              <span
+                className={cn(
+                  "font-semibold tabular-nums",
+                  isUp ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground"
+                )}
+              >
+                {isUp ? "+" : ""}
+                {delta} pts
+              </span>
+              {isUp ? (
+                <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
+              ) : delta < 0 ? (
+                <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
+              ) : null}
+            </div>
+          )}
 
           {/* Progress bar */}
           <div className="flex-1 max-w-[200px] h-1 rounded-full bg-border/60 overflow-hidden">
@@ -263,7 +326,8 @@ function ScoreCenterpiece() {
 //  TODAY'S HIGHLIGHTS
 // ═════════════════════════════════════════════════════════════════
 
-function TodaysHighlights() {
+function TodaysHighlights({ highlights }: { highlights: Highlight[] }) {
+  if (highlights.length === 0) return null;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -276,16 +340,16 @@ function TodaysHighlights() {
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-accent" />
             <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground">
-              Today&apos;s Highlights
+              Highlights
             </p>
           </div>
-          <span className="text-[9px] text-muted-foreground/40">{HIGHLIGHTS.length} events</span>
+          <span className="text-[9px] text-muted-foreground/40">{highlights.length} events</span>
         </div>
       </div>
 
       <div className="divide-y divide-border/50">
         <AnimatePresence>
-          {HIGHLIGHTS.map((h: Highlight, i: number) => (
+          {highlights.map((h: Highlight, i: number) => (
             <motion.div
               key={h.id}
               initial={{ opacity: 0, x: -8 }}
@@ -313,115 +377,10 @@ function TodaysHighlights() {
 }
 
 // ═════════════════════════════════════════════════════════════════
-//  AI HEALTH SUMMARY
-// ═════════════════════════════════════════════════════════════════
-
-function AIHealthSummary() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-      className="rounded-xl border border-border bg-card overflow-hidden"
-    >
-      <div className="px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-accent" />
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground">AI Health</p>
-        </div>
-      </div>
-
-      <div className="divide-y divide-border/50">
-        {AI_ENGINES.map((engine: AIEngineHealth) => (
-          <div
-            key={engine.id}
-            className="grid grid-cols-4 gap-3 px-4 py-2.5 text-[10px] hover:bg-muted/15 transition-colors"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <StatusDot status={engine.status} size="xs" />
-              <span className="font-medium text-foreground truncate">{engine.name}</span>
-            </div>
-            <div className="text-muted-foreground/60">{engine.responseTime}</div>
-            <div className="font-mono tabular-nums">
-              <span
-                className={cn(
-                  engine.visibility >= 80
-                    ? "text-green-500"
-                    : engine.visibility >= 60
-                    ? "text-orange-500"
-                    : "text-red-500"
-                )}
-              >
-                {engine.visibility}%
-              </span>
-            </div>
-            <div className="text-muted-foreground/40 truncate">{engine.lastCrawl}</div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ═════════════════════════════════════════════════════════════════
-//  LIVE INFRASTRUCTURE
-// ═════════════════════════════════════════════════════════════════
-
-function LiveInfrastructure() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut", delay: 0.35 }}
-      className="rounded-xl border border-border bg-card overflow-hidden"
-    >
-      <div className="px-4 py-3 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Server className="h-3.5 w-3.5 text-accent" />
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground">Live Infrastructure</p>
-          </div>
-          <span className="inline-flex items-center gap-1 text-[9px] text-green-500">
-            <StatusDot status="healthy" size="xs" />
-            All systems
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-border/30">
-        {INFRASTRUCTURE.map((metric: InfrastructureMetric) => (
-          <div
-            key={metric.id}
-            className="bg-card px-3 py-2.5 hover:bg-muted/15 transition-colors"
-          >
-            <p className="text-[9px] text-muted-foreground/50 mb-1">{metric.label}</p>
-            <div className="flex items-center gap-1.5">
-              <StatusDot status={metric.status} size="xs" />
-              <span
-                className={cn(
-                  "text-xs font-semibold tabular-nums",
-                  metric.status === "warning"
-                    ? "text-orange-500"
-                    : metric.status === "critical"
-                    ? "text-red-500"
-                    : "text-foreground"
-                )}
-              >
-                {metric.value}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ═════════════════════════════════════════════════════════════════
 //  RIGHT PANEL – Recommended Actions
 // ═════════════════════════════════════════════════════════════════
 
-function RecommendedActions() {
+function RecommendedActions({ actions }: { actions: RecommendedAction[] }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 12 }}
@@ -446,8 +405,17 @@ function RecommendedActions() {
         </div>
       </div>
 
+      {actions.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+          <CheckCircle2 className="h-7 w-7 text-green-500/60 mb-2" />
+          <p className="text-xs font-medium text-muted-foreground">Nothing outstanding</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+            You&apos;re passing every measured check
+          </p>
+        </div>
+      ) : (
       <div className="flex-1 divide-y divide-border/50">
-        {RECOMMENDED_ACTIONS.map((action: RecommendedAction, i: number) => (
+        {actions.map((action: RecommendedAction, i: number) => (
           <motion.div
             key={action.id}
             initial={{ opacity: 0, y: 8 }}
@@ -494,19 +462,14 @@ function RecommendedActions() {
                 </div>
 
                 <div className="flex items-center gap-2 mt-0.5">
-                  {!action.completed && action.priority !== "critical" && action.impact > 0 && (
-                    <>
-                      <span className="inline-flex items-center gap-0.5 rounded bg-green-500/10 px-1.5 py-0.5 text-[8px] font-semibold text-green-500">
-                        +{action.impact} Visibility
-                      </span>
-                      {action.time && (
-                        <span className="text-[9px] text-muted-foreground/40">{action.time}</span>
-                      )}
-                    </>
+                  {!action.completed && action.impact > 0 && (
+                    <span className="inline-flex items-center gap-0.5 rounded bg-green-500/10 px-1.5 py-0.5 text-[8px] font-semibold text-green-500">
+                      +{action.impact} pts to recover
+                    </span>
                   )}
-                  {action.priority === "critical" && !action.completed && (
-                    <span className="text-[8px] font-semibold text-red-500 uppercase tracking-wider">
-                      Security Improvement
+                  {!action.completed && action.impact === 0 && (
+                    <span className="text-[8px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
+                      {action.priority} priority
                     </span>
                   )}
                   {action.completed && (
@@ -526,6 +489,7 @@ function RecommendedActions() {
           </motion.div>
         ))}
       </div>
+      )}
     </motion.div>
   );
 }
@@ -537,10 +501,8 @@ function RecommendedActions() {
 function QuickActionsBar() {
   const iconMap: Record<string, React.ReactNode> = {
     scan: <Zap className="h-4 w-4" />,
-    server: <Server className="h-4 w-4" />,
     chart: <BarChart3 className="h-4 w-4" />,
     file: <FileText className="h-4 w-4" />,
-    users: <Users className="h-4 w-4" />,
     globe: <Globe className="h-4 w-4" />,
   };
 
@@ -551,7 +513,7 @@ function QuickActionsBar() {
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.4 }}
       className="flex flex-wrap gap-2"
     >
-      {QUICK_ACTIONS.map((action: QuickAction) => (
+      {QUICK_ACTIONS.map((action) => (
         <Link
           key={action.id}
           href={action.href}
@@ -607,10 +569,36 @@ function HeroSkeleton() {
 
 interface CommandCenterHeroProps {
   loading?: boolean;
+  data?: HeroData | null;
 }
 
-export function CommandCenterHero({ loading }: CommandCenterHeroProps) {
+export function CommandCenterHero({ loading, data }: CommandCenterHeroProps) {
   if (loading) return <HeroSkeleton />;
+
+  // No scans yet — an honest onboarding prompt rather than a wall of zeros.
+  if (!data) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-8 text-center sm:p-12">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+          <Target className="h-6 w-6 text-accent" />
+        </div>
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
+          {greeting}. Let&apos;s see how AI reads your site.
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Run your first scan and this dashboard fills with your real score, issues, and
+          the fixes that move it — all from your own site.
+        </p>
+        <Link
+          href="/#scan"
+          className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground no-underline transition-colors hover:bg-primary/90"
+        >
+          <Zap className="h-4 w-4" />
+          Run your first scan
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -618,20 +606,22 @@ export function CommandCenterHero({ loading }: CommandCenterHeroProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* ── Left Column: Greeting + Summary ────────────────── */}
         <div className="md:col-span-1 lg:col-span-3 space-y-4">
-          <GreetingSection />
-          <AIHealthSummary />
+          <GreetingSection
+            firstName={data.firstName}
+            domain={data.domain}
+            summary={data.executiveSummary}
+          />
         </div>
 
-        {/* ── Center Column: Score + Highlights + Infra ──────── */}
+        {/* ── Center Column: Score + Highlights ──────────────── */}
         <div className="md:col-span-1 lg:col-span-6 space-y-4">
-          <ScoreCenterpiece />
-          <TodaysHighlights />
-          <LiveInfrastructure />
+          <ScoreCenterpiece data={data} />
+          <TodaysHighlights highlights={data.highlights} />
         </div>
 
         {/* ── Right Column: Recommended Actions ─────────────── */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col">
-          <RecommendedActions />
+          <RecommendedActions actions={data.recommendedActions} />
         </div>
       </div>
 

@@ -4,18 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { cn } from "../lib/utils";
 import { track } from "../lib/analytics";
-import { ALL_RECS, PRIORITY_ORDER, DIFFICULTY_ORDER } from "../components/recommendations/data";
+import { PRIORITY_ORDER, DIFFICULTY_ORDER } from "../components/recommendations/data";
 import { RecCard } from "../components/recommendations/rec-card";
 import { ProgressTracker } from "../components/recommendations/progress-tracker";
 import { FilterBar } from "../components/recommendations/filter-bar";
 import { AchievementSystem } from "../components/recommendations/achievement-system";
-import { RecsSkeleton } from "../components/recommendations/loading-skeleton";
 import { withAuthRequired } from "../lib/auth-guard";
+import { deriveRecommendations } from "../lib/derive-from-scans";
 
-export default function Recommendations() {
+export default function Recommendations({ recs = [], host = null, currentScore = null }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [recommendations, setRecommendations] = useState([]);
+  // Local completion is a session-only convenience (tick items off as you go);
+  // the real state is the next scan, which re-derives this list.
+  const [recommendations, setRecommendations] = useState(() => recs.map((r) => ({ ...r })));
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -24,16 +25,8 @@ export default function Recommendations() {
   const [selectedIds, setSelectedIds] = useState(new Set());
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setRecommendations(ALL_RECS.map((r) => ({ ...r })));
-      setLoading(false);
-    }, 1400);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (!loading) track("recommendations_viewed", { total: ALL_RECS.length });
-  }, [loading]);
+    track("recommendations_viewed", { total: recs.length, host });
+  }, [recs.length, host]);
 
   const completionPct = recommendations.length > 0
     ? Math.round((recommendations.filter((r) => r.completed).length / recommendations.length) * 100)
@@ -135,15 +128,39 @@ export default function Recommendations() {
 
       <div>
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
-          {loading ? (
-            <RecsSkeleton />
+          {recs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+                <svg className="h-6 w-6 text-accent" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h1 className="text-lg font-bold text-foreground">
+                {host ? "Nothing left to fix" : "No recommendations yet"}
+              </h1>
+              <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted-foreground">
+                {host
+                  ? `${host} passed every measured check on its last scan. Re-scan after any change to keep it there.`
+                  : "Run your first scan and we'll turn every failed check into a prioritised, fixable recommendation."}
+              </p>
+              <Link
+                href="/#scan"
+                className="mt-6 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground no-underline transition-colors hover:bg-primary/90"
+              >
+                {host ? "Run another scan" : "Run your first scan"}
+              </Link>
+            </div>
           ) : (
             <div className="animate-fadeIn space-y-4 sm:space-y-6">
               {/* Page Header */}
               <div>
                 <h1 className="text-lg sm:text-xl font-bold text-foreground">Recommendations</h1>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  AI-powered fixes to improve your visibility to GPT, Claude, Gemini, and Perplexity
+                  {host
+                    ? `Prioritised fixes for ${host}, from its latest scan${
+                        currentScore != null ? ` (${currentScore}/100)` : ""
+                      }`
+                    : "Prioritised fixes to improve your visibility to GPT, Claude, Gemini, and Perplexity"}
                 </p>
               </div>
 
@@ -326,7 +343,25 @@ export default function Recommendations() {
   );
 }
 
-// ── Access control ──────────────────────────────────────────────
-// Verified server-side: this page never reaches an unauthenticated browser,
-// with or without a direct URL.
-export const getServerSideProps = withAuthRequired();
+// ── Access control + real data ──────────────────────────────────
+// Server-side auth (never reaches an unauthenticated browser) plus the real
+// recommendations, derived from the user's latest scan's failed checks.
+export const getServerSideProps = withAuthRequired(async (ctx, { supabase }) => {
+  const { data: scans, error } = await supabase
+    .from("scans")
+    .select("id, scan_id, url, total_score, band, checks, created_at")
+    .eq("kind", "primary")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) console.error("[recommendations] failed to load scans:", error.message);
+
+  const derived = deriveRecommendations(scans ?? []);
+  return {
+    props: {
+      recs: derived.recommendations,
+      host: derived.host ?? null,
+      currentScore: derived.currentScore ?? null,
+    },
+  };
+});

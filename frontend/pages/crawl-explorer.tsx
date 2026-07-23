@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import Head from "next/head";
 import { motion, AnimatePresence } from "framer-motion";
+import { PreviewBanner } from "../components/preview-banner";
 import { X, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { HeaderBar } from "../components/crawl-explorer/header-bar";
@@ -47,6 +48,9 @@ export default function CrawlExplorer() {
       </Head>
 
       <div className="h-screen flex flex-col bg-background overflow-hidden">
+        <div className="shrink-0">
+          <PreviewBanner />
+        </div>
         {/* ── Page Content ─────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header */}

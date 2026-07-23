@@ -52,8 +52,6 @@ export const PRIMARY_NAV: (NavGroup | NavItem)[] = [
     label: "AI Analytics",
     href: "/analytics",
     icon: BarChart3,
-    badge: "Live",
-    badgeColor: "text-green-500",
   },
   {
     id: "recommendations",
@@ -66,8 +64,6 @@ export const PRIMARY_NAV: (NavGroup | NavItem)[] = [
     label: "Hosted MCP",
     href: "/hosted-mcp",
     icon: Server,
-    badge: "Live",
-    badgeColor: "text-green-500",
   },
   {
     id: "competitors",

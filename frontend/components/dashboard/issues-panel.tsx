@@ -9,18 +9,19 @@ interface Issue {
   fixed?: boolean;
 }
 
-interface IssuesPanelProps {
-  className?: string;
+interface Recommendation {
+  title: string;
+  impact: string;
+  effort: string;
 }
 
-const defaultIssues: Issue[] = [
-  { id: "1", name: "Robots.txt blocks GPTBot", severity: "critical", category: "Crawlability" },
-  { id: "2", name: "Missing JSON-LD structured data", severity: "critical", category: "Structured Data" },
-  { id: "3", name: "No llms.txt file found", severity: "major", category: "Documentation" },
-  { id: "4", name: "Slow page load time (4.2s)", severity: "major", category: "Performance" },
-  { id: "5", name: "Incomplete meta tags", severity: "minor", category: "Meta" },
-  { id: "6", name: "Missing Open Graph images", severity: "minor", category: "Meta" },
-];
+interface IssuesPanelProps {
+  className?: string;
+  /** Real issues from the latest scan, worst first. */
+  issues?: Issue[];
+  /** Real recommendations derived from the same scan. */
+  recommendations?: Recommendation[];
+}
 
 const severityColors = {
   critical: {
@@ -43,7 +44,11 @@ const severityColors = {
   },
 };
 
-export function IssuesPanel({ className }: IssuesPanelProps) {
+export function IssuesPanel({
+  className,
+  issues = [],
+  recommendations = [],
+}: IssuesPanelProps) {
   const [activeTab, setActiveTab] = useState<"issues" | "recommendations">("issues");
   const [isVisible, setIsVisible] = useState(false);
 
@@ -51,7 +56,6 @@ export function IssuesPanel({ className }: IssuesPanelProps) {
     setIsVisible(true);
   }, []);
 
-  const issues = defaultIssues;
   const criticalCount = issues.filter((i) => i.severity === "critical").length;
   const majorCount = issues.filter((i) => i.severity === "major").length;
 
@@ -100,6 +104,17 @@ export function IssuesPanel({ className }: IssuesPanelProps) {
         {/* Content */}
         <div className="px-3 pb-3">
           {activeTab === "issues" ? (
+            issues.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <svg className="h-8 w-8 text-green-500/50 mb-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                </svg>
+                <p className="text-xs font-medium text-muted-foreground">No open issues</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  Every measured check passed on your latest scan
+                </p>
+              </div>
+            ) : (
             <div className="space-y-1">
               {/* Severity summary */}
               <div className="flex gap-3 px-2 py-2 mb-1">
@@ -147,35 +162,20 @@ export function IssuesPanel({ className }: IssuesPanelProps) {
                 );
               })}
             </div>
+            )
+          ) : recommendations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <svg className="h-8 w-8 text-green-500/50 mb-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xs font-medium text-muted-foreground">Nothing to recommend</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                You&apos;re passing every check we can measure
+              </p>
+            </div>
           ) : (
             <div className="space-y-1.5 px-2 py-3">
-              {[
-                {
-                  title: 'Add "Allow: GPTBot" to robots.txt',
-                  impact: "High",
-                  effort: "Low",
-                },
-                {
-                  title: "Implement JSON-LD structured data",
-                  impact: "High",
-                  effort: "Medium",
-                },
-                {
-                  title: "Create an llms.txt file",
-                  impact: "Medium",
-                  effort: "Low",
-                },
-                {
-                  title: "Optimize page load speed",
-                  impact: "Medium",
-                  effort: "Medium",
-                },
-                {
-                  title: "Add Open Graph meta tags",
-                  impact: "Low",
-                  effort: "Low",
-                },
-              ].map((rec, idx) => (
+              {recommendations.map((rec, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-muted/20"
