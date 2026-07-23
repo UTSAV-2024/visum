@@ -4,34 +4,30 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/router";
 import { Sidebar } from "./sidebar/sidebar";
 import { useSidebar } from "./sidebar/sidebar-context";
+import { PreviewBanner } from "./preview-banner";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 /*
-  Pages that currently render demonstration data rather than the user's own.
-  They stay reachable, but never pretend to be live — candor over drama.
+  Pages that still render demonstration data rather than the user's own —
+  each needs a data source Visum doesn't produce yet (crawler-traffic logs, a
+  teams model, a hosted MCP service, AI-query monitoring…). They stay
+  reachable, but never pretend to be live — candor over drama. As each is
+  wired to real data (dashboard, recommendations, reports, competitors already
+  were), it comes off this list.
 */
 const PREVIEW_ROUTES = new Set([
   "/analytics",
   "/insights",
   "/team",
+  "/crawl-explorer",
+  "/hosted-mcp",
+  "/org-command-center",
+  "/optimization-workspace",
+  "/prompt-intelligence",
 ]);
-
-function PreviewBanner() {
-  return (
-    <div
-      role="status"
-      className="flex items-center justify-center gap-2.5 border-b border-copper/30 bg-copper/10 px-4 py-2 text-center"
-    >
-      <span className="font-mono text-[11px] text-copper">preview</span>
-      <p className="m-0 text-[13px] text-foreground/90">
-        This page shows sample data. It goes live once accounts launch.
-      </p>
-    </div>
-  );
-}
 
 function AppLayoutContent({ children }: AppLayoutProps) {
   const { expanded, isMobile } = useSidebar();
