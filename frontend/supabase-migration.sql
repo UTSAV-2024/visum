@@ -34,6 +34,18 @@ alter table public.scans drop constraint if exists scans_status_ck;
 alter table public.scans add constraint scans_status_ck
   check (status in ('completed', 'failed'));
 
+-- Distinguish a user's own-site scans from scans they run of competitors.
+-- Existing rows default to 'primary', so nothing changes for them.
+alter table public.scans
+  add column if not exists kind text not null default 'primary';
+
+alter table public.scans drop constraint if exists scans_kind_ck;
+alter table public.scans add constraint scans_kind_ck
+  check (kind in ('primary', 'competitor'));
+
+create index if not exists scans_user_kind_created_idx
+  on public.scans (user_id, kind, created_at desc);
+
 create index if not exists scans_url_idx              on public.scans (url);
 create index if not exists scans_created_at_idx       on public.scans (created_at);
 create index if not exists scans_total_score_idx      on public.scans (total_score);

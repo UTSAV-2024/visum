@@ -51,3 +51,43 @@ export async function fetchAccount() {
   if (!response.ok) return null;
   return response.json();
 }
+
+/**
+ * Scan a competitor's site. Costs a scan from the user's quota, so it can be
+ * refused the same way a normal scan is.
+ */
+export async function scanCompetitor(url) {
+  const response = await fetch("/api/competitors/scan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ url }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 402) {
+      throw new ScanRefusedError(payload.error || "Scan refused", {
+        code: payload.code,
+        status: response.status,
+        quota: payload.quota,
+      });
+    }
+    throw new Error(payload.error || "Couldn't scan that competitor.");
+  }
+  return payload;
+}
+
+/** Stop tracking a competitor by host. */
+export async function removeCompetitor(host) {
+  const response = await fetch("/api/competitors/remove", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ host }),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Couldn't remove that competitor.");
+  }
+  return response.json();
+}

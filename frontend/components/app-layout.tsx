@@ -16,7 +16,6 @@ interface AppLayoutProps {
 const PREVIEW_ROUTES = new Set([
   "/analytics",
   "/insights",
-  "/competitors",
   "/team",
 ]);
 

@@ -28,6 +28,7 @@ export const getServerSideProps = withAuthRequired(async (ctx, { supabase }) => 
   const { data: scans, error } = await supabase
     .from("scans")
     .select("id, scan_id, url, total_score, band, checks, scan_time_ms, created_at")
+    .eq("kind", "primary")
     .order("created_at", { ascending: false })
     .limit(50);
 
