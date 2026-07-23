@@ -36,6 +36,30 @@ function severityOf(check) {
   return "minor";
 }
 
+// Each check mapped to the category vocabulary the recommendations filter uses.
+const CHECK_CATEGORY = {
+  "AI Bot Permissions (robots.txt)": "Crawlability",
+  "Sitemap.xml": "Crawlability",
+  "JavaScript Rendering": "Rendering",
+  "JSON-LD Structured Data": "Structured Data",
+  "MCP Endpoint": "Integration",
+  "llms.txt File": "Documentation",
+  "Meta Tags and Open Graph": "Meta",
+  "Page Load Speed": "Performance",
+};
+
+// A rough effort estimate per check — guidance, not a measurement.
+const CHECK_EFFORT = {
+  "AI Bot Permissions (robots.txt)": "5 min",
+  "Sitemap.xml": "15 min",
+  "JavaScript Rendering": "2 hours",
+  "JSON-LD Structured Data": "30 min",
+  "MCP Endpoint": "3 hours",
+  "llms.txt File": "10 min",
+  "Meta Tags and Open Graph": "15 min",
+  "Page Load Speed": "2 hours",
+};
+
 function hostOf(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -275,15 +299,19 @@ export function deriveRecommendations(scans) {
         id: c.name,
         title: c.fix || `Fix: ${c.name}`,
         check: c.name,
+        category: CHECK_CATEGORY[c.name] || "SEO",
         priority: severityOf(c) === "critical" ? "critical" : severityOf(c) === "major" ? "high" : "medium",
         scoreImprovement: recoverable,
         difficulty: max >= 15 ? "medium" : "easy",
+        implementationTime: CHECK_EFFORT[c.name] || "30 min",
         description: c.finding || c.description || "",
-        fix: c.fix || "",
+        // Every check ships a fix string, so a fix is always available to read;
+        // "one-click" it is not, but the guidance is there.
+        fixAvailable: !!c.fix,
+        dependencies: [],
         partial: !!c.partial,
-        // A rec is "completed" if this check passes now but failed before —
-        // useful when a user re-scans after applying a fix.
         completed: false,
+        // Passes now but failed on the prior scan — handy after a re-scan.
         wasFixed: c.passed && !prevPassed.has(c.name),
       };
     })
