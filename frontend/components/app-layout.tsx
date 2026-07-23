@@ -14,7 +14,6 @@ interface AppLayoutProps {
   They stay reachable, but never pretend to be live — candor over drama.
 */
 const PREVIEW_ROUTES = new Set([
-  "/dashboard",
   "/analytics",
   "/insights",
   "/recommendations",
