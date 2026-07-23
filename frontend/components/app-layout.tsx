@@ -17,7 +17,6 @@ const PREVIEW_ROUTES = new Set([
   "/analytics",
   "/insights",
   "/competitors",
-  "/reports",
   "/team",
 ]);
 

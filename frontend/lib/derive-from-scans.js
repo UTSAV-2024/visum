@@ -340,13 +340,29 @@ export function deriveReports(scans) {
 
   const timeline = chrono.map((s, i) => {
     const prev = chrono[i - 1];
-    const failed = toChecks(s).filter((c) => c.measured !== false && !c.passed);
+    const checks = toChecks(s);
+    const failed = checks.filter((c) => c.measured !== false && !c.passed);
+    // Against the immediately older scan: checks fixed, and checks that broke.
+    let resolved = 0;
+    let regressions = 0;
+    if (prev) {
+      const prevFailed = new Set(
+        toChecks(prev).filter((c) => c.measured !== false && !c.passed).map((c) => c.name)
+      );
+      const prevPassed = new Set(toChecks(prev).filter((c) => c.passed).map((c) => c.name));
+      resolved = checks.filter((c) => c.passed && prevFailed.has(c.name)).length;
+      regressions = checks.filter(
+        (c) => c.measured !== false && !c.passed && prevPassed.has(c.name)
+      ).length;
+    }
     return {
       id: s.id || s.scan_id || String(i),
       date: fmtDate(s.created_at),
       score: s.total_score,
       change: prev ? s.total_score - prev.total_score : 0,
       issues: failed.length,
+      resolved,
+      regressions,
       url: hostOf(s.url),
     };
   });
@@ -365,12 +381,20 @@ export function deriveReports(scans) {
   }
   const latestChecks = toChecks(scans[0]);
   const passingNow = new Set(latestChecks.filter((c) => c.passed).map((c) => c.name));
+  // When a still-open issue last passed (its resolution date), if ever.
+  const resolvedAtByName = new Map();
+  for (const s of chrono) {
+    for (const c of toChecks(s)) {
+      if (c.passed) resolvedAtByName.set(c.name, fmtDate(s.created_at));
+    }
+  }
   const issueHistory = [...firstSeen.entries()].map(([name, meta]) => ({
     id: name,
     name,
     severity: meta.severity,
     firstSeen: meta.firstSeen,
     resolved: passingNow.has(name),
+    resolvedAt: passingNow.has(name) ? resolvedAtByName.get(name) : null,
   }));
 
   return {
