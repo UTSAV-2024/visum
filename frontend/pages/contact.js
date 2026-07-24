@@ -31,7 +31,7 @@ export default function Contact() {
     const body = encodeURIComponent(
       `Name: ${name.trim()}\nEmail: ${email.trim()}\n\nMessage:\n${message.trim()}`
     );
-    window.location.href = `mailto:utsav@visum.io?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:utsavkumar1283@gmail.com?subject=${subject}&body=${body}`;
 
     setSubmitted(true);
   }
@@ -162,10 +162,10 @@ export default function Contact() {
                   <div>
                     <h3 className="text-sm font-semibold text-foreground mb-3">Email</h3>
                     <a
-                      href="mailto:utsav@visum.io"
+                      href="mailto:utsavkumar1283@gmail.com"
                       className="text-sm text-accent hover:text-accent/80 underline underline-offset-2"
                     >
-                      utsav@visum.io
+                      utsavkumar1283@gmail.com
                     </a>
                   </div>
 
