@@ -15,7 +15,7 @@
  */
 import { getAuthedUser } from "../../lib/supabase/auth";
 import { getSupabaseAdminClient } from "../../lib/supabase/admin";
-import { loadAccountSummary } from "../../lib/server/account";
+import { loadAccountSummary, resolveBilling } from "../../lib/server/account";
 
 const BACKEND_URL =
   process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -84,8 +84,12 @@ export default async function handler(req, res) {
   }
 
   // ── 2. Quota ───────────────────────────────────────────────────────
+  // On a team, the scan is charged to the owner's shared pool and stamped with
+  // the org so every member sees it.
+  const { billingUserId, orgId } = await resolveBilling(admin, user.id);
+
   const { data: quota, error: quotaError } = await admin.rpc("consume_scan_quota", {
-    p_user_id: user.id,
+    p_user_id: billingUserId,
   });
 
   if (quotaError) {
@@ -109,9 +113,10 @@ export default async function handler(req, res) {
     });
   }
 
-  // From here on the credit is spent — every failure path must hand it back.
+  // From here on the credit is spent — every failure path must hand it back
+  // to the same pool it came from.
   const releaseQuota = async () => {
-    const { error } = await admin.rpc("release_scan_quota", { p_user_id: user.id });
+    const { error } = await admin.rpc("release_scan_quota", { p_user_id: billingUserId });
     if (error) console.error("[api/scan] failed to release quota:", error.message);
   };
 
@@ -176,6 +181,7 @@ export default async function handler(req, res) {
       scan_time_ms: result.scan_time_ms,
       storage_bytes: storageBytes,
       status: "completed",
+      org_id: orgId,
       created_at: new Date().toISOString(),
     },
     { onConflict: "scan_id" }
