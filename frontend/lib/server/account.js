@@ -52,21 +52,42 @@ export async function loadAccountSummary(user) {
 
   await ensureAccountRows(admin, user);
 
+  // Who backs this account's quota, and which team (if any) it belongs to.
+  // Solo → the user themselves, no org. Member → the team owner's pool.
+  const { data: billingRows } = await admin.rpc("resolve_billing", { p_user_id: user.id });
+  const billing = billingRows?.[0] || { billing_user_id: user.id, org_id: null };
+  const billingUserId = billing.billing_user_id || user.id;
+  const orgId = billing.org_id || null;
+
+  // Subscription and usage come from the billing owner (the shared pool);
+  // the profile is always the user's own. Storage is the whole team's when
+  // there's a team, otherwise just this user's.
   const [subRes, usageRes, profileRes, storageRes] = await Promise.all([
-    admin.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle(),
-    admin.from("usage").select("*").eq("user_id", user.id).maybeSingle(),
+    admin.from("subscriptions").select("*").eq("user_id", billingUserId).maybeSingle(),
+    admin.from("usage").select("*").eq("user_id", billingUserId).maybeSingle(),
     admin.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-    admin
-      .from("storage_usage")
-      .select("storage_used_bytes, scan_count")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+    orgId
+      ? admin.from("scans").select("storage_bytes").eq("org_id", orgId)
+      : admin
+          .from("storage_usage")
+          .select("storage_used_bytes, scan_count")
+          .eq("user_id", user.id)
+          .maybeSingle(),
   ]);
 
   const sub = subRes.data;
   const usage = usageRes.data;
   const profile = profileRes.data;
-  const storage = storageRes.data;
+  // Team storage is summed across the org's scans; solo comes from the view.
+  const storage = orgId
+    ? {
+        storage_used_bytes: (storageRes.data || []).reduce(
+          (s, r) => s + Number(r.storage_bytes || 0),
+          0
+        ),
+        scan_count: (storageRes.data || []).length,
+      }
+    : storageRes.data;
 
   const tier = sub?.tier || DEFAULT_TIER;
   const plan = getPlan(tier);
@@ -109,7 +130,20 @@ export async function loadAccountSummary(user) {
       storageRemainingBytes: Math.max(storageLimitBytes - storageUsedBytes, 0),
       scanCount: storage?.scan_count ?? 0,
     },
+    // Present when the account is part of a team, so the UI can note that the
+    // quota shown is a shared pool.
+    team: orgId ? { orgId, shared: true } : null,
   };
+}
+
+/**
+ * Who pays for a user's scans, and which org the scan belongs to.
+ * Solo → (self, null). Team member → (owner, org). Used by the scan endpoints.
+ */
+export async function resolveBilling(admin, userId) {
+  const { data, error } = await admin.rpc("resolve_billing", { p_user_id: userId });
+  if (error || !data?.[0]) return { billingUserId: userId, orgId: null };
+  return { billingUserId: data[0].billing_user_id || userId, orgId: data[0].org_id || null };
 }
 
 /**

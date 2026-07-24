@@ -413,3 +413,125 @@ on conflict (user_id) do nothing;
 
 insert into public.usage (user_id) select id from auth.users
 on conflict (user_id) do nothing;
+
+
+-- ═════════════════════════════════════════════════════════════════════
+-- Teams: organizations, members, invites (shared quota pool)
+-- ═════════════════════════════════════════════════════════════════════
+
+-- ── organizations ───────────────────────────────────────────────────
+-- A team. The owner's subscription is the shared quota pool for everyone in
+-- it. A user is "solo" until they create or join one of these.
+create table if not exists public.organizations (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  owner_id   uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists organizations_owner_idx on public.organizations (owner_id);
+
+-- ── organization_members ─────────────────────────────────────────────
+-- One row per (org, user). A user belongs to at most one org for now — the
+-- billing model assumes a single shared pool per person.
+create table if not exists public.organization_members (
+  org_id    uuid not null references public.organizations(id) on delete cascade,
+  user_id   uuid not null references auth.users(id) on delete cascade,
+  role      text not null default 'member'
+              check (role in ('owner', 'admin', 'member', 'viewer')),
+  joined_at timestamptz not null default now(),
+  primary key (org_id, user_id),
+  unique (user_id)  -- at most one org per user
+);
+
+create index if not exists org_members_user_idx on public.organization_members (user_id);
+create index if not exists org_members_org_idx  on public.organization_members (org_id);
+
+-- ── organization_invites ─────────────────────────────────────────────
+-- A shareable, one-time-per-acceptance join link. No email is sent; the owner
+-- copies the token and shares it however they like.
+create table if not exists public.organization_invites (
+  id         uuid primary key default gen_random_uuid(),
+  org_id     uuid not null references public.organizations(id) on delete cascade,
+  token      text not null unique,
+  role       text not null default 'member'
+               check (role in ('admin', 'member', 'viewer')),
+  created_by uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '14 days'),
+  revoked    boolean not null default false
+);
+
+create index if not exists org_invites_org_idx  on public.organization_invites (org_id);
+create index if not exists org_invites_token_idx on public.organization_invites (token);
+
+-- ── scans.org_id ─────────────────────────────────────────────────────
+-- Null = a personal scan; set = a team scan visible to the whole org.
+alter table public.scans
+  add column if not exists org_id uuid references public.organizations(id) on delete set null;
+
+create index if not exists scans_org_created_idx
+  on public.scans (org_id, created_at desc) where org_id is not null;
+
+-- ── Billing / membership helpers ─────────────────────────────────────
+-- Resolve who pays for a user's scans and which org the scan belongs to.
+-- Solo → (self, null). Team member → (org owner, org). Server-only.
+create or replace function public.resolve_billing(p_user_id uuid)
+returns table (billing_user_id uuid, org_id uuid)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    coalesce(o.owner_id, p_user_id) as billing_user_id,
+    m.org_id                        as org_id
+  from (select p_user_id) s
+  left join public.organization_members m on m.user_id = p_user_id
+  left join public.organizations o        on o.id = m.org_id;
+$$;
+
+-- The caller's own org ids. Parameterless (reads auth.uid()) so it can't be
+-- used to probe another user's memberships. Used inside RLS policies.
+create or replace function public.my_org_ids()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select org_id from public.organization_members where user_id = (select auth.uid());
+$$;
+
+revoke all on function public.resolve_billing(uuid) from public, anon, authenticated;
+grant execute on function public.resolve_billing(uuid) to service_role;
+grant execute on function public.my_org_ids() to authenticated, service_role;
+
+-- ── RLS: team tables read-only from the browser; writes are server-side ──
+alter table public.organizations        enable row level security;
+alter table public.organization_members enable row level security;
+alter table public.organization_invites enable row level security;
+
+drop policy if exists "Members read their organization" on public.organizations;
+create policy "Members read their organization"
+  on public.organizations for select to authenticated
+  using (id in (select public.my_org_ids()));
+
+drop policy if exists "Members read their org roster" on public.organization_members;
+create policy "Members read their org roster"
+  on public.organization_members for select to authenticated
+  using (org_id in (select public.my_org_ids()));
+
+drop policy if exists "Members read their org invites" on public.organization_invites;
+create policy "Members read their org invites"
+  on public.organization_invites for select to authenticated
+  using (org_id in (select public.my_org_ids()));
+
+-- Broaden scans SELECT to team scans: your own rows, plus any scan in your org.
+drop policy if exists "Users can read their own scans" on public.scans;
+drop policy if exists "Users can read their own or team scans" on public.scans;
+create policy "Users can read their own or team scans"
+  on public.scans for select to authenticated
+  using (
+    user_id = (select auth.uid())
+    or (org_id is not null and org_id in (select public.my_org_ids()))
+  );

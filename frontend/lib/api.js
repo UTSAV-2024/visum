@@ -77,6 +77,22 @@ export async function scanCompetitor(url) {
   return payload;
 }
 
+/**
+ * Run a team action (create, invite, revoke_invite, accept, set_role, remove).
+ * Returns the fresh team state the server sends back.
+ */
+export async function teamAction(body) {
+  const response = await fetch("/api/team", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "Something went wrong.");
+  return payload;
+}
+
 /** Stop tracking a competitor by host. */
 export async function removeCompetitor(host) {
   const response = await fetch("/api/competitors/remove", {

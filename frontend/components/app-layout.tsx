@@ -21,7 +21,6 @@ interface AppLayoutProps {
 const PREVIEW_ROUTES = new Set([
   "/analytics",
   "/insights",
-  "/team",
   "/crawl-explorer",
   "/hosted-mcp",
   "/org-command-center",

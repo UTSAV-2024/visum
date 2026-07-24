@@ -8,6 +8,7 @@
  */
 import { getAuthedUser } from "../../../lib/supabase/auth";
 import { getSupabaseAdminClient } from "../../../lib/supabase/admin";
+import { resolveBilling } from "../../../lib/server/account";
 
 const BACKEND_URL =
   process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -102,9 +103,11 @@ export default async function handler(req, res) {
     .filter((r) => hostOf(r.url) === competitorHost)
     .map((r) => r.id);
 
-  // ── Quota: a competitor scan spends a credit like any other ──────────
+  // ── Quota: a competitor scan spends a credit like any other, from the
+  // shared pool if the user is on a team ───────────────────────────────
+  const { billingUserId } = await resolveBilling(admin, user.id);
   const { data: quota, error: quotaError } = await admin.rpc("consume_scan_quota", {
-    p_user_id: user.id,
+    p_user_id: billingUserId,
   });
   if (quotaError) {
     console.error("[api/competitors/scan] quota check failed:", quotaError.message);
@@ -125,7 +128,7 @@ export default async function handler(req, res) {
   }
 
   const releaseQuota = async () => {
-    const { error } = await admin.rpc("release_scan_quota", { p_user_id: user.id });
+    const { error } = await admin.rpc("release_scan_quota", { p_user_id: billingUserId });
     if (error) console.error("[api/competitors/scan] failed to release quota:", error.message);
   };
 
