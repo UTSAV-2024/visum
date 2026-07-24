@@ -111,6 +111,39 @@ export async function loadTeam(userId) {
   };
 }
 
+/**
+ * Recent team activity, reconstructed from the org's scans: who scanned what,
+ * and when. The only real "who did what" signal the app produces.
+ */
+export async function loadTeamActivity(admin, orgId, memberById, limit = 12) {
+  const { data, error } = await admin
+    .from("scans")
+    .select("id, url, total_score, user_id, created_at")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("[team] loadTeamActivity:", error.message);
+    return [];
+  }
+  return (data || []).map((s) => {
+    const who = memberById.get(s.user_id);
+    let host = s.url;
+    try {
+      host = new URL(s.url).hostname.replace(/^www\./, "");
+    } catch {
+      /* keep raw */
+    }
+    return {
+      id: s.id,
+      actorName: who?.fullName || who?.email || "A teammate",
+      host,
+      score: s.total_score,
+      at: s.created_at,
+    };
+  });
+}
+
 /** Create a team and make the user its owner. Fails if they're already in one. */
 export async function createTeam(admin, user, name) {
   const existing = await getMembership(admin, user.id);
