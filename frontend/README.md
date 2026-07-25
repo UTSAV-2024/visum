@@ -37,7 +37,7 @@ set, the app runs exactly as before with no login required, and `/login` and
 `/signup` show a "not configured" notice. Once both are set:
 
 - `/signup` and `/login` become live (email + password; email-confirmation flow supported).
-- The dashboard routes (`/dashboard`, `/analytics`, `/insights`, `/recommendations`, `/competitors`, `/reports`, `/team`) require an authenticated user. `/result` stays public (it's the end of the free scan funnel).
+- Every app route (`/dashboard`, `/analytics`, `/recommendations`, `/competitors`, `/reports`, `/team`, `/result`) requires an authenticated user. `/result` is included: scanning is an account feature, so there is no anonymous scan funnel.
 - `proxy.js` does an optimistic cookie-presence redirect; `components/auth/route-guard.tsx` enforces auth on the client; `lib/auth-context.js` exposes `useAuth()`.
 
 Find the two `NEXT_PUBLIC_SUPABASE_*` values in your Supabase project under
