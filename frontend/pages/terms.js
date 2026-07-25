@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
+import { SITE_URL } from "../lib/site";
 
 export default function TermsOfService() {
   return (
@@ -13,7 +14,7 @@ export default function TermsOfService() {
           name="description"
           content="Visum's terms of service govern the use of our AI agent readiness scanning platform. Review our terms before using the service."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/terms" />
+        <link rel="canonical" href={`${SITE_URL}/terms`} />
         <meta property="og:title" content="Terms of Service — Visum" />
         <meta
           property="og:description"

@@ -14,6 +14,7 @@ import { ScanResultsSkeleton } from "../components/scan-results/loading-skeleton
 import { cn } from "../lib/utils";
 import { track, getScoreBucket } from "../lib/analytics";
 import { withAuthRequired } from "../lib/auth-guard";
+import { SITE_URL } from "../lib/site";
 
 // ── Check categorization helpers ────────────────────────────────
 
@@ -370,7 +371,7 @@ export default function Result() {
               <a
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
                   `My site scored ${result.total_score}/100 on Visum's AI Agent Readiness Scanner. Is your site visible to ChatGPT and Claude?`
-                )}&url=${encodeURIComponent("https://visum-eight.vercel.app")}`}
+                )}&url=${encodeURIComponent(SITE_URL)}`}
                 target="_blank" rel="noopener noreferrer"
                 onClick={() => track("tweet_clicked", { score: result.total_score })}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#1DA1F2] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#1a8cd8] transition-all no-underline"

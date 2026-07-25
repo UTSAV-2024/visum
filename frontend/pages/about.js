@@ -3,6 +3,8 @@ import Link from "next/link";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
+import { SITE_URL } from "../lib/site";
+import { PLANS } from "../lib/plans";
 
 const milestones = [
   { year: "2024", event: "Visum founded to solve AI visibility for the modern web" },
@@ -58,7 +60,7 @@ export default function About() {
           name="description"
           content="Learn about Visum — the AI agent readiness scanner that helps you understand how AI systems like ChatGPT, Claude, and Perplexity see your website."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/about" />
+        <link rel="canonical" href={`${SITE_URL}/about`} />
         <meta property="og:title" content="About — Visum AI Agent Readiness Scanner" />
         <meta
           property="og:description"
@@ -230,7 +232,7 @@ export default function About() {
                 Ready to Check Your AI Readiness?
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                It takes 30 seconds, and a free account comes with 3 scans.
+                It takes 30 seconds, and a free account comes with {PLANS.free.scanLimit} scans.
               </p>
               <Link
                 href="/"

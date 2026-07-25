@@ -5,6 +5,8 @@ import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
 import { Reveal } from "../components/motion";
 import { PlansGrid } from "../components/pricing/plans-grid";
+import { SITE_URL } from "../lib/site";
+import { PLANS } from "../lib/plans";
 
 const faqs = [
   {
@@ -36,9 +38,9 @@ export default function Pricing() {
         <title>Pricing — Visum</title>
         <meta
           name="description"
-          content="Visum pricing: start free with 3 scans, or get 30 scans a week on Pro ($15) and 100 a week on Ultimate ($70). See how AI systems read your site."
+          content={`Visum pricing: start free with ${PLANS.free.scanLimit} scans, or get ${PLANS.pro.scanLimitLabel} on Pro (${PLANS.pro.priceLabel}) and ${PLANS.ultimate.scanLimitLabel} on Ultimate (${PLANS.ultimate.priceLabel}). See how AI systems read your site.`}
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/pricing" />
+        <link rel="canonical" href={`${SITE_URL}/pricing`} />
       </Head>
 
       <div className="flex min-h-screen flex-col bg-background text-foreground">

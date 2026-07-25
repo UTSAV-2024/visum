@@ -16,9 +16,9 @@
 import { getAuthedUser } from "../../lib/supabase/auth";
 import { getSupabaseAdminClient } from "../../lib/supabase/admin";
 import { loadAccountSummary, resolveBilling } from "../../lib/server/account";
+import { getBackendUrl } from "../../lib/site";
 
-const BACKEND_URL =
-  process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BACKEND_URL = getBackendUrl("http://localhost:8000");
 
 // A scan takes ~20s; allow generous headroom but never hang a function.
 const SCAN_TIMEOUT_MS = 55_000;

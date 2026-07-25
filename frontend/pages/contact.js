@@ -3,6 +3,7 @@ import Head from "next/head";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
+import { SITE_URL } from "../lib/site";
 
 export default function Contact() {
   const [name, setName] = useState("");
@@ -44,7 +45,7 @@ export default function Contact() {
           name="description"
           content="Get in touch with the Visum team. Send us a message about AI readiness, partnerships, or support."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/contact" />
+        <link rel="canonical" href={`${SITE_URL}/contact`} />
         <meta property="og:title" content="Contact — Visum" />
         <meta
           property="og:description"

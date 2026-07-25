@@ -57,6 +57,14 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 - [ ] Wire a real payment provider — `/api/subscription/upgrade` is the seam and refuses to grant a plan unless `ALLOW_UNVERIFIED_UPGRADES=true`; **requires the user** (Stripe products, price IDs, webhook secret)
 - [ ] Enable Google in the Supabase dashboard and allow-list `<domain>/api/auth/callback` — **requires the user**
 
+## P2 — Hardcoded values cleanup (2026-07-25)
+
+- [x] Centralize the production domain — `frontend/lib/site.js` exports `SITE_URL`, replacing ~20 literal `https://visum-eight.vercel.app` occurrences across `_document.js`, `about.js`, `contact.js`, `pricing.js`, `privacy.js`, `terms.js`, `result.js`, and the CSP `connect-src` in `next.config.mjs`
+- [x] Centralize the backend URL resolution — `getBackendUrl(fallback)` in `frontend/lib/site.js` unifies the `VISUM_API_URL`/`API_URL`/`NEXT_PUBLIC_API_URL` env precedence used by `api/mcp.js`, `api/scan.js`, `api/competitors/scan.js`, and `next.config.mjs`'s CSP; each call site keeps its own fallback (prod URL for MCP/CSP, `localhost:8000` for the scan routes, since those may run against a local dev backend)
+- [x] Make `pricing.js`'s meta description and the "3 scans" copy in `about.js`/`index.js` read from `lib/plans.js` (`PLANS.free.scanLimit`, `PLANS.pro`, `PLANS.ultimate`) instead of hand-written numbers
+- [x] Fix stale `visum-backend.onrender.com` in `docs/DEPLOYMENT.md` — now matches the real `visum-xoe3.onrender.com` used everywhere else
+- [x] `privacy.js` linked to `visum.io` as stale link text while the `href` already pointed at the real Vercel domain — link text now derives from `SITE_URL` too, so both match
+
 ## P2 — Security & repo hygiene
 
 - [~] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only) — verified: the key is read only in `pages/api/*.js` (server-side) via `process.env`, with no `NEXT_PUBLIC_` prefix, so it never reaches the client bundle. `.env.local` is untracked. Physically relocating it to a dedicated server env is still a deployment follow-up.
