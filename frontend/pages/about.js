@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
-import { SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/config";
 import { PLANS } from "../lib/plans";
 
 const milestones = [

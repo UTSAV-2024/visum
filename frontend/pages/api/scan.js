@@ -16,7 +16,7 @@
 import { getAuthedUser } from "../../lib/supabase/auth";
 import { getSupabaseAdminClient } from "../../lib/supabase/admin";
 import { loadAccountSummary, resolveBilling } from "../../lib/server/account";
-import { getBackendUrl } from "../../lib/site";
+import { getBackendUrl } from "../../lib/config";
 
 const BACKEND_URL = getBackendUrl("http://localhost:8000");
 
