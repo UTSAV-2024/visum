@@ -75,6 +75,15 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 - [x] Offer account creation when sign-in is rejected — the login page now surfaces a "Create an account" link carrying the typed address. Note Supabase deliberately returns the same error for *wrong password* and *no such account* (anti-enumeration), so the copy covers both rather than claiming the account doesn't exist.
 - [ ] Verify the sign-in flow interactively on the Vercel deploy — the local `next start` build does not hydrate on this machine, so no click or keystroke reaches React and the flow cannot be exercised locally (the CSP header and the error-mapping logic *were* verified locally)
 
+## P1 — AI Analytics made real (2026-07-25)
+
+- [x] **Replaced the sample-data AI Analytics page with real AI-crawler tracking** — `tracked_sites` + `bot_visits` schema (RLS: browser reads only, all writes service-role), `/api/collect` ingest, `/api/analytics/bots` + `/api/analytics/sites`, and a rebuilt `/analytics` showing only measured data. `/analytics` is off the preview-banner list.
+- [x] Collection is **server-side, not a browser pixel** — AI crawlers largely don't execute JavaScript (the very thing our JS-rendering check measures), so a client-side snippet would have recorded almost nothing. Setup ships Next.js middleware, a Cloudflare Worker, and a plain HTTP/batch format.
+- [x] Deleted the fabricated metrics that can never be measured — **Tokens Consumed** most of all: no AI provider publishes per-site token usage, so it could only ever have been invented. Also removed the 9 other unreferenced sample-data components (recoverable from git).
+- [x] Verified end-to-end against the live database: unauthenticated and bad-key ingest rejected 401; a real GPTBot UA recorded; an ordinary browser UA dropped (`recorded:0, skipped:1`); a mixed batch recorded 2 of 3. Confirmed in Postgres that no raw IP is stored (32-char salted hash) and non-crawler traffic never lands. Bot detection unit-tested 9/9, including negatives — Googlebot is deliberately *not* treated as an AI crawler.
+- [ ] Verify AI crawler user-agents against vendor IP ranges — every row currently lands `verified: false` because a user-agent is a claim, not proof, and the UI says so. Real verification means checking source IPs against OpenAI/Anthropic/Perplexity's published range lists (and reverse-DNS for Google/Apple), refreshed periodically.
+- [ ] Decide what happens to `/insights`, `/prompt-intelligence`, `/reports` — they overlap each other and the new `/analytics`; making all of them real would duplicate work, so consolidation is probably the better call
+
 ## P2 — Security & repo hygiene
 
 - [~] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only) — verified: the key is read only in `pages/api/*.js` (server-side) via `process.env`, with no `NEXT_PUBLIC_` prefix, so it never reaches the client bundle. `.env.local` is untracked. Physically relocating it to a dedicated server env is still a deployment follow-up.

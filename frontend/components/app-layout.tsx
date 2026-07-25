@@ -19,7 +19,6 @@ interface AppLayoutProps {
   were), it comes off this list.
 */
 const PREVIEW_ROUTES = new Set([
-  "/analytics",
   "/insights",
   "/crawl-explorer",
   "/hosted-mcp",
