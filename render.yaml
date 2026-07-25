@@ -14,8 +14,17 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
+    # Pinned explicitly: a Blueprint with no `plan` defaults to a paid tier.
+    # Free gives 0.1 CPU / 512 MB, which is tight for Chromium — see the
+    # concurrency note below. Raise this if scans OOM.
+    plan: free
     envVars:
       - key: DATABASE_URL
         sync: false
       - key: ALLOWED_ORIGINS
         value: http://localhost:3000,https://visum-eight.vercel.app
+      # Chromium needs several hundred MB per instance, and the free tier only
+      # has 512 MB in total. One scan at a time is the difference between a
+      # browser that launches and one the kernel kills.
+      - key: MAX_CONCURRENT_SCANS
+        value: "1"

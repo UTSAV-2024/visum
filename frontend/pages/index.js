@@ -7,12 +7,13 @@ import { UpgradeCta } from "../components/upgrade-cta";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
 import { Reveal, Stagger, StaggerItem } from "../components/motion";
+import { PLANS } from "../lib/plans";
 
 const steps = [
   {
     n: "1",
     title: "Paste your address",
-    desc: "Any public site — Shopify, WordPress, Webflow, or custom. Free account, three scans to start.",
+    desc: `Any public site — Shopify, WordPress, Webflow, or custom. Free account, ${PLANS.free.scanLimit} scans to start.`,
   },
   {
     n: "2",
@@ -80,11 +81,11 @@ const faqs = [
   },
   {
     q: "Is the scan free?",
-    a: "Every account starts with 3 free scans — a full AI readiness score and detailed findings for any public website, at no cost. Paid plans add a weekly scan allowance for sites you monitor continuously.",
+    a: `Every account starts with ${PLANS.free.scanLimit} free scans — a full AI readiness score and detailed findings for any public website, at no cost. Paid plans add a weekly scan allowance for sites you monitor continuously.`,
   },
   {
     q: "Do I need to sign up?",
-    a: "Yes — a free account takes a moment and gives you 3 scans. It's what lets us keep your scan history, track scores over time, and let you re-scan after a fix. You can sign up with email or continue with Google.",
+    a: `Yes — a free account takes a moment and gives you ${PLANS.free.scanLimit} scans. It's what lets us keep your scan history, track scores over time, and let you re-scan after a fix. You can sign up with email or continue with Google.`,
   },
   {
     q: "What AI systems do you test for?",
