@@ -12,6 +12,7 @@ import { QuestionsSection } from "../components/insights/questions-section";
 import { SuggestedImprovements } from "../components/insights/suggested-improvements";
 import { RecentConversations } from "../components/insights/recent-conversations";
 import { InsightsSkeleton } from "../components/insights/loading-skeleton";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function AIInsights() {
   const [loading, setLoading] = useState(true);
@@ -104,3 +105,8 @@ export default function AIInsights() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

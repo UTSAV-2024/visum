@@ -270,8 +270,8 @@ export default function PrivacyPolicy() {
                   </ul>
                   <p className="mt-3">
                     To exercise any of these rights, please contact us at{" "}
-                    <a href="mailto:utsav@visum.io" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                      utsav@visum.io
+                    <a href="mailto:utsavkumar1283@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2">
+                      utsavkumar1283@gmail.com
                     </a>.
                     We will respond to your request within 30 days.
                   </p>
@@ -315,8 +315,8 @@ export default function PrivacyPolicy() {
                   <ul className="list-disc pl-5 mt-2 space-y-1">
                     <li>
                       Email:{" "}
-                      <a href="mailto:utsav@visum.io" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                        utsav@visum.io
+                      <a href="mailto:utsavkumar1283@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2">
+                        utsavkumar1283@gmail.com
                       </a>
                     </li>
                     <li>

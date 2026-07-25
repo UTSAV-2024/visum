@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
-import { SCAN_HISTORY } from "./data";
 
-export function ScanTimeline({ onSelectScan, selectedScan, className }) {
+export function ScanTimeline({ onSelectScan, selectedScan, className, scans = [] }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -37,7 +36,7 @@ export function ScanTimeline({ onSelectScan, selectedScan, className }) {
           {/* Connecting line */}
           <div className="absolute left-[19px] top-3 bottom-3 w-0.5 bg-border" />
 
-          {[...SCAN_HISTORY].reverse().map((scan, idx) => {
+          {scans.map((scan, idx) => {
             const sg = scoreGradient(scan.score);
             const isSelected = selectedScan === scan.id;
             const isLatest = idx === 0;

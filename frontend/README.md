@@ -16,6 +16,33 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Environment variables
+
+Copy `.env.example` to `.env.local` and fill in your values.
+
+| Variable | Where it runs | Purpose |
+| --- | --- | --- |
+| `SUPABASE_URL` | server | Scan persistence + analytics |
+| `SUPABASE_SERVICE_KEY` | server only | Scan persistence + analytics (never expose to the browser) |
+| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | Authentication (signup / login) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | Authentication (public anon key — safe to expose; protect data with Row Level Security) |
+| `NEXT_PUBLIC_API_URL` | browser | Backend scan API base URL |
+| `NEXT_PUBLIC_STRIPE_PAYMENT_LINK` | browser | Optional Stripe payment link |
+
+### Authentication
+
+Signup/login are built on Supabase Auth (`@supabase/ssr`). **Auth is opt-in:**
+until both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are
+set, the app runs exactly as before with no login required, and `/login` and
+`/signup` show a "not configured" notice. Once both are set:
+
+- `/signup` and `/login` become live (email + password; email-confirmation flow supported).
+- The dashboard routes (`/dashboard`, `/analytics`, `/insights`, `/recommendations`, `/competitors`, `/reports`, `/team`) require an authenticated user. `/result` stays public (it's the end of the free scan funnel).
+- `proxy.js` does an optimistic cookie-presence redirect; `components/auth/route-guard.tsx` enforces auth on the client; `lib/auth-context.js` exposes `useAuth()`.
+
+Find the two `NEXT_PUBLIC_SUPABASE_*` values in your Supabase project under
+**Settings → API**.
+
 You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
 
 [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.

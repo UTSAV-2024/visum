@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Head from "next/head";
+import { PreviewBanner } from "../components/preview-banner";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Server, Terminal } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -17,6 +18,7 @@ import { LiveConnections } from "../components/hosted-mcp/live-connections";
 import { LogsPanel } from "../components/hosted-mcp/logs-panel";
 import { AuthenticationPanel } from "../components/hosted-mcp/authentication-panel";
 import { MonitoringPanel } from "../components/hosted-mcp/monitoring-panel";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -68,6 +70,8 @@ export default function HostedMCP() {
         <title>Hosted MCP Console - Visum</title>
         <meta name="description" content="Visum Hosted MCP — Deploy, manage, monitor, and scale production MCP servers for AI agents." />
       </Head>
+
+      <PreviewBanner />
 
       <div className="min-h-screen">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -233,3 +237,8 @@ export default function HostedMCP() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

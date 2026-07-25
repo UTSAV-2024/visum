@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Head from "next/head";
+import { PreviewBanner } from "../components/preview-banner";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -14,6 +15,7 @@ import { InsightsPanel } from "../components/prompt-intelligence/insights-panel"
 import { LiveActivity } from "../components/prompt-intelligence/live-activity";
 import { EngineComparison } from "../components/prompt-intelligence/engine-comparison";
 import { ContentGaps } from "../components/prompt-intelligence/content-gaps";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -131,6 +133,8 @@ export default function PromptIntelligence() {
         <title>Prompt Intelligence - Visum</title>
         <meta name="description" content="Monitor what conversations AI systems are having about your business. Track prompts, detect hallucinations, and improve AI answer accuracy." />
       </Head>
+
+      <PreviewBanner />
 
       <div className="min-h-screen">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -295,3 +299,8 @@ export default function PromptIntelligence() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

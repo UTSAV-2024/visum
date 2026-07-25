@@ -1,11 +1,11 @@
 {
   "name": "Visum — AI Agent Readiness Scanner",
   "short_name": "Visum",
-  "description": "See how AI agents like ChatGPT and Claude read your website. Free scan in 30 seconds.",
+  "description": "See how AI agents like ChatGPT and Claude read your website. 3 free scans, results in about 20 seconds.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#0a0a0f",
+  "background_color": "#080C14",
+  "theme_color": "#080C14",
   "icons": [
     {
       "src": "/icon.svg",

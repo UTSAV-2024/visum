@@ -157,7 +157,7 @@ export default function About() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-left">
                 {[
-                  { step: "01", title: "Enter a URL", desc: "Type in any public website URL — yours or a competitor's. No signup required." },
+                  { step: "01", title: "Enter a URL", desc: "Sign in, then type in any public website URL — yours or a competitor's." },
                   { step: "02", title: "Automated Scan", desc: "We run 8 AI readiness checks in under 30 seconds, testing everything from robots.txt to page speed." },
                   { step: "03", title: "Actionable Report", desc: "Get a score, detailed findings, and prioritized fixes — written for real humans." },
                 ].map((item) => (
@@ -230,7 +230,7 @@ export default function About() {
                 Ready to Check Your AI Readiness?
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                It takes 30 seconds and requires no signup.
+                It takes 30 seconds, and a free account comes with 3 scans.
               </p>
               <Link
                 href="/"

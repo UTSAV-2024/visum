@@ -28,8 +28,8 @@ export function SocialProof() {
                 desc: "Each failed check shows you exactly what we found — the blocked bot, the missing schema field, the timeout duration. You don't have to trust our opinion; you can see the data.",
               },
               {
-                title: "Free Scan, No Signup, Instant Results",
-                desc: "Enter any public URL. Get a full AI readiness report in about 20 seconds. No account, no credit card, no email required.",
+                title: "3 Free Scans, No Credit Card, Instant Results",
+                desc: "Create a free account and enter any public URL. Get a full AI readiness report in about 20 seconds. No credit card required.",
               },
             ].map((item) => (
               <div

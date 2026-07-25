@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Head from "next/head";
+import { PreviewBanner } from "../components/preview-banner";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Building2, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -14,6 +15,7 @@ import { SiteInspector } from "../components/org-command-center/site-inspector";
 import { GlobalMap } from "../components/org-command-center/global-map";
 import { ActivityTimeline } from "../components/org-command-center/activity-timeline";
 import { ExecutiveSummary } from "../components/org-command-center/executive-summary";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -153,6 +155,8 @@ export default function OrgCommandCenter() {
           content="Enterprise command center — manage AI visibility, MCP infrastructure, and team activity across your entire organization."
         />
       </Head>
+
+      <PreviewBanner />
 
       <div className="min-h-screen">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -295,3 +299,8 @@ export default function OrgCommandCenter() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

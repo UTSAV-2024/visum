@@ -13,6 +13,7 @@ class CheckResult(BaseModel):
     max_score:   int        # maximum possible points
     passed:      bool
     partial:     bool = False
+    measured:    bool = True  # False = tooling could not measure; excluded from total
     description: str        # what we checked
     finding:     str        # what we found
     fix:         str        # what the user should do
@@ -28,6 +29,7 @@ class ScanResult(BaseModel):
     scan_time_ms: int
     timestamp:    str
     upgrade_cta:  str        # personalised upgrade prompt
+    unmeasured_count: int = 0  # checks excluded from the score (tooling unavailable)
     verification: Optional[dict] = None  # verification metadata (validation status, evidence checks)
  
 class ScanRequest(BaseModel):

@@ -8,6 +8,17 @@ from playwright.async_api import async_playwright
 
 logger = logging.getLogger(__name__)
 
+# How long we let client-side JS hydrate after domcontentloaded before
+# snapshotting the DOM. This is our own instrumentation cost and must never be
+# counted against the site's measured load time.
+HYDRATION_WAIT_MS = 2000
+
+
+def looks_like_html(text: str) -> bool:
+    """Detect an HTML document masquerading as another resource (soft-404 SPA shell)."""
+    head = text.lstrip()[:300].lower()
+    return head.startswith("<!doctype") or head.startswith("<html") or "<head" in head[:150]
+
 
 class SiteCrawler:
 
@@ -25,11 +36,32 @@ class SiteCrawler:
             url = "https://" + url
         return url
 
-    async def _fetch(self, client: httpx.AsyncClient, url: str) -> str:
+    async def _fetch(self, client: httpx.AsyncClient, url: str, expect: str = "text") -> str:
+        """Fetch a non-HTML resource (robots.txt, llms.txt, sitemap.xml, JSON).
+
+        Guards against soft-404s: SPAs often return their HTML shell with
+        HTTP 200 for any path, which must not count as the resource existing.
+        """
         try:
             resp = await client.get(url)
-            if resp.status_code == 200:
-                return resp.text
+            if resp.status_code != 200:
+                return ""
+            content_type = resp.headers.get("content-type", "").lower()
+            body = resp.text
+            # An HTML response for a .txt/.xml/JSON resource is a soft-404
+            if "text/html" in content_type or looks_like_html(body):
+                logger.debug(f"_fetch rejected {url}: HTML response for expected {expect}")
+                return ""
+            if expect == "json":
+                stripped = body.lstrip()
+                is_sse = stripped.startswith("event:") or stripped.startswith("data:")
+                if not (stripped.startswith("{") or stripped.startswith("[") or is_sse):
+                    logger.debug(f"_fetch rejected {url}: not JSON/SSE")
+                    return ""
+            if expect == "xml" and "<" not in body[:200]:
+                logger.debug(f"_fetch rejected {url}: not XML")
+                return ""
+            return body
         except Exception as e:
             logger.debug(f"_fetch failed {url}: {e}")
         return ""
@@ -60,6 +92,11 @@ class SiteCrawler:
             "status_code":  None,
             "crawl_ms":     0,
             "error":        None,
+            # True only when Playwright actually rendered the page. When it
+            # falls back to static HTML, checks that compare static-vs-rendered
+            # (JS Rendering) or need real timings (Page Load Speed) must not
+            # fabricate a score — they report measured=False instead.
+            "js_rendered":  False,
         }
 
         # ── Step 1: Parallel httpx fetches ──────────────────────────────────
@@ -119,15 +156,7 @@ class SiteCrawler:
                 )
                 page = await context.new_page()
 
-                ttfb_ms = None
                 load_start = time.time()
-
-                async def on_response(response):
-                    nonlocal ttfb_ms
-                    if response.url.rstrip("/") == url.rstrip("/") and ttfb_ms is None:
-                        ttfb_ms = int((time.time() - load_start) * 1000)
-
-                page.on("response", on_response)
 
                 await page.goto(
                     url,
@@ -135,19 +164,49 @@ class SiteCrawler:
                     timeout=self.timeout_ms
                 )
 
-                # Wait a bit for JS to hydrate after domcontentloaded
-                await page.wait_for_timeout(2000)
+                # Wait a bit for JS to hydrate after domcontentloaded.
+                # NOTE: this wait must never be counted as page load time —
+                # timings below come from the browser's Navigation Timing API,
+                # which measures the real navigation and ignores this sleep.
+                await page.wait_for_timeout(HYDRATION_WAIT_MS)
 
                 content = await page.content()
-                load_ms = int((time.time() - load_start) * 1000)
                 title = await page.title()
+                nav = await page.evaluate(
+                    """() => {
+                        const e = performance.getEntriesByType('navigation')[0];
+                        if (!e) return null;
+                        return {
+                            ttfb: Math.round(e.responseStart),
+                            dcl: Math.round(e.domContentLoadedEventEnd),
+                            load: Math.round(e.loadEventEnd),
+                            duration: Math.round(e.duration),
+                        };
+                    }"""
+                )
 
                 await browser.close()
 
+            # Prefer real browser timings; fall back to wall-clock with our own
+            # hydration wait subtracted so it is never charged to the site.
+            wall_ms = max(0, int((time.time() - load_start) * 1000) - HYDRATION_WAIT_MS)
+            if nav:
+                ttfb_ms = nav.get("ttfb") or None
+                load_ms = (
+                    nav.get("load")
+                    or nav.get("dcl")
+                    or nav.get("duration")
+                    or wall_ms
+                )
+            else:
+                ttfb_ms = None
+                load_ms = wall_ms
+
             playwright_elapsed = time.time() - playwright_start
             crawl_data["html_rendered"] = content
+            crawl_data["js_rendered"] = True
             crawl_data["performance"] = {
-                "ttfb_ms": ttfb_ms or load_ms,
+                "ttfb_ms": ttfb_ms if ttfb_ms is not None else load_ms,
                 "load_ms": load_ms,
                 "title": title,
             }

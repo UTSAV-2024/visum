@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Head from "next/head";
+import { PreviewBanner } from "../components/preview-banner";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -22,6 +23,7 @@ import { AIProjectManager } from "../components/optimization-workspace/ai-projec
 import { ProgressPanel } from "../components/optimization-workspace/progress-panel";
 import { DependencyGraph } from "../components/optimization-workspace/dependency-graph";
 import { ActivityFeed } from "../components/optimization-workspace/activity-feed";
+import { withAuthRequired } from "../lib/auth-guard";
 
 // ── Skeleton ───────────────────────────────────────────────────
 
@@ -191,6 +193,8 @@ export default function OptimizationWorkspace() {
           content="AI Optimization Workspace — Convert technical problems into actionable work items. Track recommendations, dependencies, and team progress."
         />
       </Head>
+
+      <PreviewBanner />
 
       <div className="min-h-screen">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -372,3 +376,8 @@ export default function OptimizationWorkspace() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

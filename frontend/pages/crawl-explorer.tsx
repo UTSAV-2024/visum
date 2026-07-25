@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import Head from "next/head";
 import { motion, AnimatePresence } from "framer-motion";
+import { PreviewBanner } from "../components/preview-banner";
 import { X, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { HeaderBar } from "../components/crawl-explorer/header-bar";
@@ -9,6 +10,7 @@ import { Inspector } from "../components/crawl-explorer/inspector";
 import { CrawlLogs } from "../components/crawl-explorer/crawl-logs";
 import { AIThinking } from "../components/crawl-explorer/ai-thinking";
 import { ENGINES, CRAWL_PAGES, type CrawlPage } from "../components/crawl-explorer/data";
+import { withAuthRequired } from "../lib/auth-guard";
 
 export default function CrawlExplorer() {
   const [selectedEngine, setSelectedEngine] = useState("chatgpt");
@@ -46,6 +48,9 @@ export default function CrawlExplorer() {
       </Head>
 
       <div className="h-screen flex flex-col bg-background overflow-hidden">
+        <div className="shrink-0">
+          <PreviewBanner />
+        </div>
         {/* ── Page Content ─────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header */}
@@ -176,3 +181,8 @@ export default function CrawlExplorer() {
     </>
   );
 }
+
+// ── Access control ──────────────────────────────────────────────
+// Verified server-side: this page never reaches an unauthenticated browser,
+// with or without a direct URL.
+export const getServerSideProps = withAuthRequired();

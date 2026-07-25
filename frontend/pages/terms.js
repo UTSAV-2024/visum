@@ -190,8 +190,8 @@ export default function TermsOfService() {
                   <h2 className="text-xl font-semibold text-foreground mb-3">Contact</h2>
                   <p>
                     For questions about these terms, please contact us at{" "}
-                    <a href="mailto:utsav@visum.io" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                      utsav@visum.io
+                    <a href="mailto:utsavkumar1283@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2">
+                      utsavkumar1283@gmail.com
                     </a>{" "}
                     or visit our{" "}
                     <Link href="/contact" className="text-accent hover:text-accent/80 underline underline-offset-2">
