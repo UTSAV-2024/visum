@@ -28,7 +28,7 @@ Designed for uptime monitoring and deployment verification.
 ### Example
 
 ```
-$ curl https://visum-xoe3.onrender.com/ping
+$ curl https://visum-backend.onrender.com/ping
 {"pong": true}
 ```
 
@@ -68,7 +68,7 @@ The production frontend (`https://visum-eight.vercel.app`) is included by defaul
 
 1. **Verify `/ping` returns 200**
    ```
-   curl https://visum-xoe3.onrender.com/ping
+   curl https://visum-backend.onrender.com/ping
    ```
    Expected: `{"pong": true}`
 
@@ -84,7 +84,7 @@ The production frontend (`https://visum-eight.vercel.app`) is included by defaul
 
 4. **Verify scan endpoint works**
    ```
-   curl -X POST https://visum-xoe3.onrender.com/scan \
+   curl -X POST https://visum-backend.onrender.com/scan \
      -H "Content-Type: application/json" \
      -d '{"url": "https://example.com"}'
    ```

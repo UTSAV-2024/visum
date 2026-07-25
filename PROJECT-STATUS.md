@@ -19,7 +19,7 @@ Visum scans any public website for **AI-agent readiness** — how well AI system
 | Layer | Stack | Hosting |
 | --- | --- | --- |
 | Frontend | Next.js 16 (Pages Router), React 19, Tailwind v4 | Vercel (`visum-eight.vercel.app`) |
-| Backend | FastAPI, Playwright (Chromium), httpx | Render (`visum-xoe3.onrender.com`) |
+| Backend | FastAPI, Playwright (Chromium), httpx | Render (`visum-backend.onrender.com`) |
 | Data | Supabase (Postgres) — scan persistence + auth | Supabase Cloud |
 | Analytics | PostHog + Vercel Analytics | — |
 

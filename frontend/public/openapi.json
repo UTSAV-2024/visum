@@ -14,7 +14,7 @@
   },
   "servers": [
     {
-      "url": "https://visum-xoe3.onrender.com",
+      "url": "https://visum-backend.onrender.com",
       "description": "Production API"
     },
     {
