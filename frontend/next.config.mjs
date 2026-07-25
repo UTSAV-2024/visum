@@ -1,9 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
-import { SITE_URL, getBackendUrl } from "./lib/site.js";
+import { SITE_URL, getBackendUrl } from "./lib/config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BACKEND_URL = getBackendUrl("https://visum-xoe3.onrender.com");
+const BACKEND_URL = getBackendUrl("https://visum-backend.onrender.com");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

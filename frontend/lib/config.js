@@ -5,6 +5,32 @@
  * uses a single source of truth rather than scattering `process.env` calls.
  */
 
+// ── Site identity ─────────────────────────────────────────────────
+/**
+ * The public origin of the deployed frontend. Canonical links, JSON-LD, OG
+ * tags and the CSP all derive from this, so the domain is stated once rather
+ * than repeated as a literal in every page head.
+ */
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://visum-eight.vercel.app";
+
+// ── Scan backend ──────────────────────────────────────────────────
+/**
+ * Resolves the scan backend URL from the env chain the app already uses,
+ * falling back to `fallback` when none are set. Callers pass their own
+ * fallback: server-only routes that may run against a local dev backend want
+ * localhost, while the MCP endpoint and CSP want the real deployment.
+ */
+export function getBackendUrl(fallback) {
+  return (
+    process.env.VISUM_API_URL ||
+    process.env.API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    fallback
+  );
+}
+
+// ── Stripe ────────────────────────────────────────────────────────
 export const STRIPE_PAYMENT_LINK =
   process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK || "";
 

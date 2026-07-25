@@ -1,5 +1,5 @@
 import { Html, Head, Main, NextScript } from "next/document";
-import { SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/config";
 
 export default function Document() {
   return (

@@ -5,7 +5,7 @@ import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
 import { Reveal } from "../components/motion";
 import { PlansGrid } from "../components/pricing/plans-grid";
-import { SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/config";
 import { PLANS } from "../lib/plans";
 
 const faqs = [

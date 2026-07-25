@@ -3,7 +3,7 @@ import Head from "next/head";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
-import { SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/config";
 
 export default function Contact() {
   const [name, setName] = useState("");

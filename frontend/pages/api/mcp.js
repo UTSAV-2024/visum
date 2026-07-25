@@ -8,9 +8,9 @@
 // agent can request an AI-readiness report for any URL and get structured
 // results back.
 
-import { getBackendUrl } from "../../lib/site";
+import { getBackendUrl } from "../../lib/config";
 
-const API_URL = getBackendUrl("https://visum-xoe3.onrender.com");
+const API_URL = getBackendUrl("https://visum-backend.onrender.com");
 
 const PROTOCOL_VERSION = "2024-11-05";
 

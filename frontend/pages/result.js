@@ -14,7 +14,7 @@ import { ScanResultsSkeleton } from "../components/scan-results/loading-skeleton
 import { cn } from "../lib/utils";
 import { track, getScoreBucket } from "../lib/analytics";
 import { withAuthRequired } from "../lib/auth-guard";
-import { SITE_URL } from "../lib/site";
+import { SITE_URL } from "../lib/config";
 
 // ── Check categorization helpers ────────────────────────────────
 
