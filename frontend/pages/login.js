@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from "../lib/supabase/client";
 import { isAuthEnabled } from "../lib/config";
 import { track } from "../lib/posthog";
 import { safeNext } from "../lib/safe-next";
+import { describeAuthError, CREDENTIALS_REJECTED } from "../lib/auth-errors";
 
 // Reasons the OAuth callback can bounce someone back here, in plain English.
 const CALLBACK_ERRORS = {
@@ -22,15 +23,25 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  // Set when the credentials were rejected, which is also the "you may not have
+  // an account yet" case — Supabase won't tell us which.
+  const [offerSignup, setOfferSignup] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const next = safeNext(router.query.next);
   const callbackError = CALLBACK_ERRORS[router.query.error];
   const shownError = error || callbackError || "";
 
+  // Carry the address they already typed so creating an account is one click,
+  // not a re-type.
+  const signupHref = `/signup?next=${encodeURIComponent(next)}${
+    email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
+  }`;
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setOfferSignup(false);
 
     if (!email.trim() || !password) {
       setError("Enter your email and password.");
@@ -50,14 +61,18 @@ export default function Login() {
         password,
       });
       if (signInError) {
-        setError(signInError.message || "Could not sign you in. Check your details.");
+        const { message, code } = describeAuthError(signInError, { context: "signin" });
+        setError(message);
+        setOfferSignup(code === CREDENTIALS_REJECTED);
         setSubmitting(false);
         return;
       }
       track("login_success", {});
       router.replace(next);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      // signInWithPassword normally returns errors rather than throwing, but a
+      // thrown one is still most likely the network — describe it the same way.
+      setError(describeAuthError(err, { context: "signin" }).message);
       setSubmitting(false);
     }
   }
@@ -137,9 +152,22 @@ export default function Login() {
           </div>
 
           {shownError && (
-            <p className="text-sm font-medium text-destructive" role="alert">
-              {shownError}
-            </p>
+            <div role="alert" className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-destructive">{shownError}</p>
+              {offerSignup && (
+                <p className="text-sm text-muted-foreground">
+                  New to Visum?{" "}
+                  <Link
+                    href={signupHref}
+                    className="font-semibold text-accent hover:underline"
+                    onClick={() => track("signup_offered_after_failed_login", {})}
+                  >
+                    Create an account
+                  </Link>{" "}
+                  — it takes a moment, and you can use Google above.
+                </p>
+              )}
+            </div>
           )}
 
           <button

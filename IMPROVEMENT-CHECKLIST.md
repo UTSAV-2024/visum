@@ -68,6 +68,13 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 - [x] Fix stale backend domain in `docs/DEPLOYMENT.md` — it pointed at a host that never existed; every reference now points at the live backend
 - [x] `privacy.js` linked to `visum.io` as stale link text while the `href` already pointed at the real Vercel domain — link text now derives from `SITE_URL` too, so both match
 
+## P0 — Auth broken in production (2026-07-25)
+
+- [x] **The CSP blocked every Supabase request from the browser** — `connect-src` never included the Supabase host (missing since the CSP was introduced in `95190e5`), so `signInWithPassword` failed at the network layer and the raw `TypeError: Failed to fetch` was rendered to users. This broke *all* email/password sign-in and sign-up, not just unknown emails. Proven in the deployed page: a host inside `connect-src` returned 200 while Supabase returned "Failed to fetch" from the same origin. Fixed by deriving the Supabase origin from `SUPABASE_URL` in the `connect-src` list.
+- [x] Stop rendering raw auth errors — `lib/auth-errors.js` maps Supabase failures to copy a person can act on, so a blocked request reads as "we couldn't reach the sign-in service" rather than "Failed to fetch"
+- [x] Offer account creation when sign-in is rejected — the login page now surfaces a "Create an account" link carrying the typed address. Note Supabase deliberately returns the same error for *wrong password* and *no such account* (anti-enumeration), so the copy covers both rather than claiming the account doesn't exist.
+- [ ] Verify the sign-in flow interactively on the Vercel deploy — the local `next start` build does not hydrate on this machine, so no click or keystroke reaches React and the flow cannot be exercised locally (the CSP header and the error-mapping logic *were* verified locally)
+
 ## P2 — Security & repo hygiene
 
 - [~] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only) — verified: the key is read only in `pages/api/*.js` (server-side) via `process.env`, with no `NEXT_PUBLIC_` prefix, so it never reaches the client bundle. `.env.local` is untracked. Physically relocating it to a dedicated server env is still a deployment follow-up.
