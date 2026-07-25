@@ -51,14 +51,40 @@ export function PlansGrid() {
       return;
     }
 
-    // A configured payment link is the real checkout; take it when it exists.
-    if (hasPaymentLink) {
-      window.location.assign(STRIPE_PAYMENT_LINK);
-      return;
-    }
-
     setPending(tier);
     try {
+      // Real card checkout first. It answers 501 when Stripe isn't configured,
+      // which is the signal to fall back to the manual-grant path rather than
+      // leaving the user staring at an error.
+      const checkout = await fetch("/api/subscription/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ tier }),
+      });
+      const checkoutPayload = await checkout.json().catch(() => ({}));
+
+      if (checkout.ok && checkoutPayload.url) {
+        // Stripe owns the rest of the flow; the plan is granted by the webhook.
+        window.location.assign(checkoutPayload.url);
+        return;
+      }
+
+      const notConfigured =
+        checkoutPayload.code === "payments_not_configured" ||
+        checkoutPayload.code === "price_not_configured";
+
+      if (!checkout.ok && !notConfigured) {
+        setNotice(checkoutPayload.error || "Could not start checkout. Please try again.");
+        return;
+      }
+
+      // A standalone Payment Link is the next-best real checkout.
+      if (notConfigured && hasPaymentLink) {
+        window.location.assign(STRIPE_PAYMENT_LINK);
+        return;
+      }
+
       const res = await fetch("/api/subscription/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

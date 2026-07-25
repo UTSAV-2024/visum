@@ -37,6 +37,29 @@ export const STRIPE_PAYMENT_LINK =
 /** True when a Stripe Payment Link has been configured */
 export const hasPaymentLink = STRIPE_PAYMENT_LINK.length > 0;
 
+/** Server-side only — never prefixed NEXT_PUBLIC_, so it stays out of the bundle. */
+export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+
+/**
+ * Price IDs per paid tier. Set these once the products exist in Stripe; a tier
+ * with no price ID simply can't be checked out, which is deliberate — better a
+ * clear "not configured" than a checkout that charges the wrong amount.
+ */
+export const STRIPE_PRICE_IDS = {
+  pro: process.env.STRIPE_PRICE_PRO || "",
+  ultimate: process.env.STRIPE_PRICE_ULTIMATE || "",
+};
+
+/**
+ * True when real card checkout can run. Both halves matter: the secret key
+ * signs the session, and the webhook secret is what lets us trust the
+ * completion callback. Without the webhook we could create a checkout we can
+ * never safely fulfil, so checkout stays off until both are present.
+ */
+export const isStripeEnabled =
+  STRIPE_SECRET_KEY.length > 0 && STRIPE_WEBHOOK_SECRET.length > 0;
+
 // ── Supabase auth ─────────────────────────────────────────────────
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
