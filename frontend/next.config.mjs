@@ -1,9 +1,29 @@
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
-import { SITE_URL, getBackendUrl } from "./lib/config.js";
+import { SITE_URL, SUPABASE_URL, getBackendUrl } from "./lib/config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BACKEND_URL = getBackendUrl("https://visum-backend.onrender.com");
+
+/**
+ * Hosts the browser is allowed to call. Supabase belongs here because the auth
+ * client talks to it with fetch from the page: without it the browser blocks
+ * every sign-in and sign-up with a bare "Failed to fetch", which looks like a
+ * broken server rather than a policy decision.
+ *
+ * Filtered because an unset SUPABASE_URL would otherwise emit an empty token
+ * and invalidate the whole directive.
+ */
+const CONNECT_SRC = [
+  "'self'",
+  SITE_URL,
+  BACKEND_URL,
+  SUPABASE_URL,
+  "https://*.supabase.co",
+  "http://localhost:*",
+  "https://*.vercel.app",
+  "https://pagead2.googlesyndication.com",
+].filter(Boolean);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -39,7 +59,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' data: https://fonts.gstatic.com",
-              `connect-src 'self' ${SITE_URL} ${BACKEND_URL} http://localhost:* https://*.vercel.app https://pagead2.googlesyndication.com`,
+              `connect-src ${CONNECT_SRC.join(" ")}`,
               "frame-src 'self' https://pagead2.googlesyndication.com",
               "media-src 'self'",
               "object-src 'none'",

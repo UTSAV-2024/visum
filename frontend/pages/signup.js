@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -8,8 +8,17 @@ import { getSupabaseBrowserClient } from "../lib/supabase/client";
 import { isAuthEnabled } from "../lib/config";
 import { track } from "../lib/posthog";
 import { safeNext } from "../lib/safe-next";
+import { describeAuthError } from "../lib/auth-errors";
 
 const MIN_PASSWORD = 8;
+
+/** Only accept a prefill that actually looks like an address. */
+function prefillEmail(value) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (typeof candidate !== "string") return "";
+  const trimmed = candidate.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : "";
+}
 
 export default function Signup() {
   const router = useRouter();
@@ -23,6 +32,15 @@ export default function Signup() {
   // Carried through sign-up so someone who clicked "Run a scan" lands back on
   // the scan form once their account exists.
   const next = safeNext(router.query.next);
+
+  // This page is statically prerendered, so query params only exist after the
+  // router hydrates — hence an effect rather than a useState initializer.
+  // Only prefills an untouched field, so it can't overwrite typing.
+  useEffect(() => {
+    if (!router.isReady) return;
+    const prefill = prefillEmail(router.query.email);
+    if (prefill) setEmail((current) => current || prefill);
+  }, [router.isReady, router.query.email]);
 
   function validate() {
     if (!email.trim()) return "Email is required.";
@@ -62,7 +80,7 @@ export default function Signup() {
         },
       });
       if (signUpError) {
-        setError(signUpError.message || "Could not create your account.");
+        setError(describeAuthError(signUpError, { context: "signup" }).message);
         setSubmitting(false);
         return;
       }
@@ -76,8 +94,8 @@ export default function Signup() {
       }
       // Auto-confirm enabled → straight into the app.
       router.replace(next);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(describeAuthError(err, { context: "signup" }).message);
       setSubmitting(false);
     }
   }
