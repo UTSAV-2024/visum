@@ -535,3 +535,71 @@ create policy "Users can read their own or team scans"
     user_id = (select auth.uid())
     or (org_id is not null and org_id in (select public.my_org_ids()))
   );
+
+-- ── tracked_sites ────────────────────────────────────────────────────
+-- A domain a user wants AI-crawler traffic reported for.
+--
+-- The ingest key is what authenticates a report. It is random and per-site so
+-- it can be rotated without touching the account, and it never grants read
+-- access — only the right to append visits for its own site.
+create table if not exists public.tracked_sites (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  org_id      uuid references public.organizations(id) on delete set null,
+  -- Bare hostname, lowercased, no scheme and no www. (see normaliseHost).
+  domain      text not null,
+  ingest_key  text not null unique default encode(gen_random_bytes(24), 'hex'),
+  created_at  timestamptz not null default now(),
+  unique (user_id, domain)
+);
+
+create index if not exists tracked_sites_ingest_key_idx
+  on public.tracked_sites (ingest_key);
+
+-- ── bot_visits ───────────────────────────────────────────────────────
+-- One row per request an AI crawler made to a tracked site.
+--
+-- No raw IP is stored. `ip_hash` is a salted digest kept only so repeat
+-- visitors can be counted without the address itself being retained.
+--
+-- `verified` records whether the claim was corroborated beyond the
+-- user-agent string, which is trivially spoofable — an unverified row means
+-- "something said it was GPTBot", not "GPTBot".
+create table if not exists public.bot_visits (
+  id          uuid primary key default gen_random_uuid(),
+  site_id     uuid not null references public.tracked_sites(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  bot         text not null,
+  user_agent  text,
+  path        text,
+  status      integer,
+  ip_hash     text,
+  verified    boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists bot_visits_site_time_idx
+  on public.bot_visits (site_id, created_at desc);
+create index if not exists bot_visits_user_time_idx
+  on public.bot_visits (user_id, created_at desc);
+create index if not exists bot_visits_bot_idx
+  on public.bot_visits (site_id, bot);
+
+-- ── RLS ──────────────────────────────────────────────────────────────
+-- Read-only from the browser; every write goes through the service role, so a
+-- user can never fabricate traffic for themselves or read anyone else's.
+alter table public.tracked_sites enable row level security;
+alter table public.bot_visits    enable row level security;
+
+drop policy if exists "Users read their own tracked sites" on public.tracked_sites;
+create policy "Users read their own tracked sites"
+  on public.tracked_sites for select to authenticated
+  using (
+    user_id = (select auth.uid())
+    or (org_id is not null and org_id in (select public.my_org_ids()))
+  );
+
+drop policy if exists "Users read their own bot visits" on public.bot_visits;
+create policy "Users read their own bot visits"
+  on public.bot_visits for select to authenticated
+  using (user_id = (select auth.uid()));

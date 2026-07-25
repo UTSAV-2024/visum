@@ -11,7 +11,6 @@ import { RouteGuard } from "../components/auth/route-guard";
 const APP_ROUTES = new Set([
   "/dashboard",
   "/analytics",
-  "/insights",
   "/recommendations",
   "/competitors",
   "/result",
@@ -28,17 +27,11 @@ const APP_ROUTES = new Set([
 const PROTECTED_ROUTES = new Set([
   "/dashboard",
   "/analytics",
-  "/insights",
   "/recommendations",
   "/competitors",
   "/reports",
   "/team",
   "/result",
-  "/crawl-explorer",
-  "/hosted-mcp",
-  "/org-command-center",
-  "/optimization-workspace",
-  "/prompt-intelligence",
 ]);
 
 export default function App({ Component, pageProps }) {

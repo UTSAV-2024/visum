@@ -16,17 +16,11 @@ const AUTH_ENABLED =
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/analytics",
-  "/insights",
   "/recommendations",
   "/competitors",
   "/reports",
   "/team",
   "/result",
-  "/crawl-explorer",
-  "/hosted-mcp",
-  "/org-command-center",
-  "/optimization-workspace",
-  "/prompt-intelligence",
 ];
 
 const AUTH_PAGES = ["/login", "/signup"];
@@ -80,17 +74,11 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/analytics/:path*",
-    "/insights/:path*",
     "/recommendations/:path*",
     "/competitors/:path*",
     "/reports/:path*",
     "/team/:path*",
     "/result/:path*",
-    "/crawl-explorer/:path*",
-    "/hosted-mcp/:path*",
-    "/org-command-center/:path*",
-    "/optimization-workspace/:path*",
-    "/prompt-intelligence/:path*",
     "/login",
     "/signup",
   ],

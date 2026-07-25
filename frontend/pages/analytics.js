@@ -1,257 +1,210 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Head from "next/head";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { AiBotVisits } from "../components/analytics/ai-bot-visits";
-import { TokenConsumption } from "../components/analytics/token-consumption";
-import { CrawlingTimeline } from "../components/analytics/crawling-timeline";
-import { ContentIndexed } from "../components/analytics/content-indexed";
-import { AiMentionsHeatmap } from "../components/analytics/ai-mentions-heatmap";
-import { RetrievalSuccess } from "../components/analytics/retrieval-success";
-import { PromptSuccessRate } from "../components/analytics/prompt-success-rate";
-import { AiEngineComparison } from "../components/analytics/ai-engine-comparison";
-import { TrendCharts } from "../components/analytics/trend-charts";
-import { DateRangePicker } from "../components/analytics/date-range-picker";
-import { InsightsPanel } from "../components/analytics/insights-panel";
+import { BotTraffic, CrawlTimeline, TopPaths } from "../components/analytics/bot-traffic";
+import { TrackingSetup } from "../components/analytics/tracking-setup";
 import { AnalyticsSkeleton } from "../components/analytics/loading-skeleton";
 import { cn } from "../lib/utils";
 import { track } from "../lib/analytics";
 import { withAuthRequired } from "../lib/auth-guard";
 
-// ── Status indicator ─────────────────────────────────────────────
+const RANGES = [
+  { id: 7, label: "7d" },
+  { id: 30, label: "30d" },
+  { id: 90, label: "90d" },
+];
 
-function StatusDot({ status = "online" }) {
-  const colors = { online: "bg-green-500", warning: "bg-orange-500", offline: "bg-red-500" };
+function StatPill({ label, value, hint, color = "text-foreground" }) {
   return (
-    <span className="relative inline-flex h-2 w-2">
-      <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-75", colors[status])} />
-      <span className={cn("relative inline-flex h-2 w-2 rounded-full", colors[status])} />
-    </span>
-  );
-}
-
-// ── Stat Pill ────────────────────────────────────────────────────
-
-function StatPill({ label, value, trend, icon, color = "text-foreground" }) {
-  return (
-    <div className="relative rounded-xl border border-border bg-card p-3 sm:p-4 transition-all duration-200 hover:border-accent/30 hover:shadow-[0_0_20px_-12px_rgba(124,58,237,0.15)]">
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/[0.02] to-transparent pointer-events-none rounded-xl" />
-      <div className="relative z-10 flex items-start gap-3">
-        {icon && (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-            {icon}
-          </div>
-        )}
-        <div className="min-w-0">
-          <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-            {label}
-          </p>
-          <p className={cn("font-mono text-sm sm:text-base font-bold tabular-nums mt-0.5", color)}>
-            {value}
-          </p>
-          {trend && (
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground/60 mt-0.5">{trend}</p>
-          )}
-        </div>
-      </div>
+    <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+      <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:text-[10px]">
+        {label}
+      </p>
+      <p className={cn("mt-0.5 font-mono text-sm font-bold tabular-nums sm:text-base", color)}>
+        {value}
+      </p>
+      {hint && <p className="mt-0.5 text-[9px] text-muted-foreground/60 sm:text-[10px]">{hint}</p>}
     </div>
   );
 }
 
-// ── Main Page ────────────────────────────────────────────────────
-
 export default function AiAnalytics() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    start: "",
-    end: "",
-    preset: "30d",
-  });
-  const [comparePeriod, setComparePeriod] = useState(false);
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState(null);
+  const [sites, setSites] = useState([]);
+  const [error, setError] = useState("");
 
-  // Simulate loading
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 1600);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Track view
-  useEffect(() => {
-    if (!loading) {
-      track("analytics_viewed", { date_range: dateRange.preset });
+  const load = useCallback(async (range) => {
+    setLoading(true);
+    setError("");
+    try {
+      const [botsRes, sitesRes] = await Promise.all([
+        fetch(`/api/analytics/bots?days=${range}`, { credentials: "same-origin" }),
+        fetch("/api/analytics/sites", { credentials: "same-origin" }),
+      ]);
+      if (!botsRes.ok) {
+        const payload = await botsRes.json().catch(() => ({}));
+        setError(payload.error || "Could not load your analytics.");
+        return;
+      }
+      setData(await botsRes.json());
+      if (sitesRes.ok) {
+        const s = await sitesRes.json();
+        setSites(s.sites || []);
+      }
+    } catch {
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  }, [loading, dateRange.preset]);
-
-  const handleScanAgain = useCallback(() => {
-    track("scan_again_clicked", { from: "analytics" });
-    router.push("/");
-  }, [router]);
-
-  const handleExport = useCallback(() => {
-    track("analytics_export", {});
-    // Trigger print for PDF
-    window.print();
   }, []);
+
+  useEffect(() => {
+    load(days);
+  }, [days, load]);
+
+  useEffect(() => {
+    if (!loading && data) track("analytics_viewed", { days, state: data.state });
+  }, [loading, data, days]);
+
+  const addSite = useCallback(
+    async (domain) => {
+      try {
+        const res = await fetch("/api/analytics/sites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ domain }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) return payload.error || "Could not add that site.";
+        setSites((current) => [...current, payload.site]);
+        load(days);
+        return "";
+      } catch {
+        return "Could not reach the server. Please try again.";
+      }
+    },
+    [days, load]
+  );
+
+  const totals = data?.totals;
+  // "Nothing reported yet" and "zero crawls" are different facts; only the
+  // second is a measurement, so the page must not show 0 for the first.
+  const hasData = data?.state === "ok";
 
   return (
     <>
       <Head>
-        <title>AI Analytics - Visum</title>
+        <title>AI Analytics — Visum</title>
         <meta
           name="description"
-          content="AI Analytics dashboard — Understand how AI models see your website with advanced visualizations, trends, and insights."
+          content="See which AI crawlers reach your site, how often, and which pages they read."
         />
       </Head>
 
-      <div>
-        {/* ── Main Content ────────────────────────────────────────── */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          {loading ? (
-            <AnalyticsSkeleton />
-          ) : (
-            <div className="animate-fadeIn space-y-4 sm:space-y-6">
-              {/* ── Page Header ────────────────────────────────────── */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-lg sm:text-xl font-bold text-foreground">
-                    AI Analytics
-                  </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                    Understand how AI models interact with your website
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Compare toggle */}
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={comparePeriod}
-                      onChange={() => setComparePeriod(!comparePeriod)}
-                      className="h-3 w-3 rounded border-border bg-muted text-accent focus:ring-accent"
-                    />
-                    <span className="text-[10px] sm:text-xs text-muted-foreground">Compare previous period</span>
-                  </label>
-                  {/* Date picker */}
-                  <DateRangePicker
-                    value={dateRange}
-                    onChange={(range) => setDateRange(range)}
-                  />
-                  {/* Export */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {loading ? (
+          <AnalyticsSkeleton />
+        ) : (
+          <div className="animate-fadeIn space-y-4 sm:space-y-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h1 className="text-lg font-bold text-foreground sm:text-xl">AI Analytics</h1>
+                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                  Which AI crawlers reach your site, and what they read
+                </p>
+              </div>
+              <div className="flex gap-1">
+                {RANGES.map((r) => (
                   <button
-                    onClick={handleExport}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-all"
+                    key={r.id}
+                    type="button"
+                    onClick={() => setDays(r.id)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors",
+                      days === r.id
+                        ? "bg-accent/15 text-accent"
+                        : "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                    )}
                   >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
-                      <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
-                    </svg>
-                    Export
+                    {r.label}
                   </button>
-                </div>
+                ))}
               </div>
-
-              {/* ── Stats Strip ──────────────────────────────────── */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-                <StatPill
-                  label="AI Visits"
-                  value="6,258"
-                  trend="+18% this period"
-                  icon={
-                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 1a4.5 4.5 0 00-4.5 4.5v2.5a2 2 0 00-2 2v4a2 2 0 002 2h9a2 2 0 002-2v-4a2 2 0 00-2-2v-2.5A4.5 4.5 0 0010 1zm-2.5 7V5.5a2.5 2.5 0 015 0V8h-5z" />
-                    </svg>
-                  }
-                  color="text-accent"
-                />
-                <StatPill
-                  label="Tokens Consumed"
-                  value="6.3M"
-                  trend="+23% vs prev period"
-                  icon={
-                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10.362 1.093a.75.75 0 00-.724 0L2.523 5.018 10 9.143l7.477-4.125-7.115-3.925zM18 6.443l-7.25 4v8.25l6.862-3.786A.75.75 0 0018 14.25V6.443zm-8.75 12.25v-8.25l-7.25-4v7.807a.75.75 0 00.388.657l6.862 3.786z" />
-                    </svg>
-                  }
-                  color="text-orange-500"
-                />
-                <StatPill
-                  label="Pages Indexed"
-                  value="2,847"
-                  trend="96% index rate"
-                  icon={
-                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5z" clipRule="evenodd" />
-                    </svg>
-                  }
-                  color="text-blue-500"
-                />
-                <StatPill
-                  label="Retrieval Rate"
-                  value="86%"
-                  trend="+14% improvement"
-                  icon={
-                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                    </svg>
-                  }
-                  color="text-green-500"
-                />
-                <StatPill
-                  label="Prompt Success"
-                  value="91%"
-                  trend="Avg across engines"
-                  icon={
-                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  }
-                  color="text-green-500"
-                />
-              </div>
-
-              {/* ── Row 1: Bot Visits + Token Chart ────────────── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <AiBotVisits />
-                <TokenConsumption />
-              </div>
-
-              {/* ── Crawling Timeline (full width) ─────────────── */}
-              <CrawlingTimeline />
-
-              {/* ── Row 2: Content Indexed + Mentions Heatmap ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <ContentIndexed />
-                <AiMentionsHeatmap />
-              </div>
-
-              {/* ── Row 3: Retrieval Success + Prompt Rate ────── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <RetrievalSuccess />
-                <PromptSuccessRate />
-              </div>
-
-              {/* ── AI Engine Comparison (full width) ─────────── */}
-              <AiEngineComparison />
-
-              {/* ── Trends (full width) ───────────────────────── */}
-              <TrendCharts />
-
-              {/* ── AI Insights (full width) ──────────────────── */}
-              <InsightsPanel />
             </div>
-          )}
-        </div>
+
+            {error && (
+              <p
+                className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                role="alert"
+              >
+                {error}
+              </p>
+            )}
+
+            {/* Setup comes first until there's something to show. */}
+            {data && data.state !== "ok" && (
+              <TrackingSetup sites={sites} onAdd={addSite} />
+            )}
+
+            {data && data.state === "no_data" && sites.length > 0 && (
+              <p className="rounded-xl border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
+                Connected, but nothing has arrived yet. AI crawlers visit on their
+                own schedule — it can be hours or days before the first request
+                shows up. This page fills in as they come.
+              </p>
+            )}
+
+            {hasData && (
+              <>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+                  <StatPill
+                    label="Crawler requests"
+                    value={totals.visits.toLocaleString()}
+                    hint={data.truncated ? "at least — capped for this view" : `last ${days} days`}
+                    color="text-accent"
+                  />
+                  <StatPill
+                    label="Distinct crawlers"
+                    value={totals.bots}
+                    hint={`of ${data.knownBots.length} we recognise`}
+                  />
+                  <StatPill
+                    label="Pages reached"
+                    value={data.topPaths.length ? `${data.topPaths.length}+` : "—"}
+                    hint="distinct paths seen"
+                  />
+                  <StatPill
+                    label="Verified"
+                    value={`${totals.verified}`}
+                    hint="IP-confirmed; the rest are UA claims"
+                    color={totals.verified ? "text-green-500" : "text-muted-foreground"}
+                  />
+                </div>
+
+                <CrawlTimeline timeline={data.timeline} />
+
+                <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+                  <BotTraffic byBot={data.byBot} totalVisits={totals.visits} />
+                  <TopPaths topPaths={data.topPaths} />
+                </div>
+
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  A user-agent is a claim, not proof — anything can call itself
+                  GPTBot. Rows marked verified had their source address checked
+                  against the vendor&apos;s published ranges; the rest are
+                  self-reported and should be read as such.
+                </p>
+
+                <TrackingSetup sites={sites} onAdd={addSite} />
+              </>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-// ── Access control ──────────────────────────────────────────────
-// Verified server-side: this page never reaches an unauthenticated browser,
-// with or without a direct URL.
 export const getServerSideProps = withAuthRequired();

@@ -1,10 +1,7 @@
 import {
   LayoutDashboard,
-  Eye,
-  ScanLine,
   BarChart3,
   Sparkles,
-  Server,
   Radar,
   FileText,
   Users,
@@ -12,10 +9,6 @@ import {
   KeyRound,
   Puzzle,
   Settings,
-  GitGraph,
-  MessageSquare,
-  ListChecks,
-  Building2,
   type LucideIcon,
 } from "lucide-react";
 import type { NavGroup, NavItem } from "./types";
@@ -30,24 +23,6 @@ export const PRIMARY_NAV: (NavGroup | NavItem)[] = [
     icon: LayoutDashboard,
   },
   {
-    id: "ai-visibility",
-    label: "AI Visibility",
-    href: "/dashboard",
-    icon: Eye,
-  },
-  {
-    id: "scan-results",
-    label: "Scan Results",
-    icon: ScanLine,
-    items: [
-      { id: "crawl-explorer", label: "Crawl Explorer", href: "/crawl-explorer", icon: GitGraph, isNew: true },
-      { id: "recent-scans", label: "Recent Scans", href: "/result", icon: ScanLine },
-      { id: "issues", label: "Issues", href: "/result#issues", icon: ScanLine },
-      { id: "reports", label: "Reports", href: "/reports", icon: FileText },
-      { id: "comparisons", label: "Comparisons", href: "/reports", icon: BarChart3 },
-    ],
-  },
-  {
     id: "ai-analytics",
     label: "AI Analytics",
     href: "/analytics",
@@ -60,42 +35,16 @@ export const PRIMARY_NAV: (NavGroup | NavItem)[] = [
     icon: Sparkles,
   },
   {
-    id: "hosted-mcp",
-    label: "Hosted MCP",
-    href: "/hosted-mcp",
-    icon: Server,
-  },
-  {
     id: "competitors",
     label: "Competitors",
     href: "/competitors",
     icon: Radar,
   },
   {
-    id: "org-command-center",
-    label: "Organization",
-    href: "/org-command-center",
-    icon: Building2,
-  },
-  {
-    id: "optimization-workspace",
-    label: "Optimization",
-    href: "/optimization-workspace",
-    icon: ListChecks,
-  },
-  {
-    id: "prompt-intelligence",
-    label: "Prompt Intelligence",
-    href: "/prompt-intelligence",
-    icon: MessageSquare,
-    badge: "New",
-    badgeColor: "text-accent",
-  },
-  {
-    id: "insights",
-    label: "Insights",
-    href: "/insights",
-    icon: Sparkles,
+    id: "reports",
+    label: "Reports",
+    href: "/reports",
+    icon: FileText,
   },
 ];
 
@@ -172,31 +121,22 @@ export const HELP_LINKS: NavItem[] = [
 export const ROUTE_MAP: Record<string, string> = {
   "/dashboard": "dashboard",
   "/analytics": "ai-analytics",
-  "/insights": "insights",
   "/recommendations": "recommendations",
   "/competitors": "competitors",
-  "/crawl-explorer": "scan-results",
-  "/result": "scan-results",
-  "/reports": "scan-results",
+  // /result is the view of a scan you just ran (it reads sessionStorage), so it
+  // is reachable from a scan rather than from the sidebar — but it should still
+  // light up Reports, which is where scan history lives.
+  "/result": "reports",
+  "/reports": "reports",
   "/team": "team",
-  "/prompt-intelligence": "prompt-intelligence",
-  "/optimization-workspace": "optimization-workspace",
-  "/org-command-center": "org-command-center",
-  "/hosted-mcp": "hosted-mcp",
 };
 
 export const APP_ROUTES = new Set([
   "/dashboard",
   "/analytics",
-  "/insights",
   "/recommendations",
   "/competitors",
-  "/crawl-explorer",
   "/result",
   "/reports",
   "/team",
-  "/prompt-intelligence",
-  "/optimization-workspace",
-  "/org-command-center",
-  "/hosted-mcp",
 ]);
