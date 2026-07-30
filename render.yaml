@@ -28,3 +28,11 @@ services:
       # browser that launches and one the kernel kills.
       - key: MAX_CONCURRENT_SCANS
         value: "1"
+      # Playwright's own navigation timeout must stay below SCAN_TIMEOUT_SECONDS,
+      # or the outer timeout hard-cancels every scan before the crawler's
+      # graceful static-HTML fallback gets a chance to run. Set explicitly
+      # here rather than relying on code defaults staying in sync.
+      - key: CRAWLER_TIMEOUT_MS
+        value: "25000"
+      - key: SCAN_TIMEOUT_SECONDS
+        value: "50"
