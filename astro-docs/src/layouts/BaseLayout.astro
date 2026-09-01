@@ -1,0 +1,117 @@
+---
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const { title, description = 'Visum — AI visibility scoring and site intelligence.' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content={description} />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title} · Visum Docs</title>
+	</head>
+	<body>
+		<header class="site-header">
+			<a class="brand" href="/">Visum</a>
+			<nav>
+				<a href="/">Home</a>
+				<a href="/docs/getting-started">Getting Started</a>
+			</nav>
+		</header>
+		<main>
+			<slot />
+		</main>
+		<footer class="site-footer">
+			<p>Built with Astro — static pages, React islands only where they earn their keep.</p>
+		</footer>
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--bg: #0b0c0f;
+		--panel: #15171c;
+		--border: #2a2d34;
+		--text: #e7e8ea;
+		--muted: #9aa0ac;
+		--accent: #7c9dff;
+	}
+	* {
+		box-sizing: border-box;
+	}
+	body {
+		margin: 0;
+		background: var(--bg);
+		color: var(--text);
+		font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+		line-height: 1.55;
+	}
+	.site-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.25rem 2rem;
+		border-bottom: 1px solid var(--border);
+	}
+	.brand {
+		font-weight: 700;
+		font-size: 1.1rem;
+		color: var(--text);
+		text-decoration: none;
+		letter-spacing: -0.01em;
+	}
+	.site-header nav a {
+		color: var(--muted);
+		text-decoration: none;
+		margin-left: 1.5rem;
+		font-size: 0.9rem;
+	}
+	.site-header nav a:hover {
+		color: var(--text);
+	}
+	main {
+		max-width: 780px;
+		margin: 0 auto;
+		padding: 3rem 2rem 5rem;
+	}
+	.site-footer {
+		text-align: center;
+		color: var(--muted);
+		font-size: 0.8rem;
+		padding: 2rem;
+		border-top: 1px solid var(--border);
+	}
+	h1 {
+		font-size: 2.1rem;
+		letter-spacing: -0.02em;
+		margin-bottom: 0.25rem;
+	}
+	h2 {
+		font-size: 1.3rem;
+		margin-top: 2.5rem;
+	}
+	p {
+		color: var(--muted);
+	}
+	code {
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 0.1rem 0.4rem;
+		font-size: 0.9em;
+	}
+	pre {
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 1rem;
+		overflow-x: auto;
+	}
+</style>

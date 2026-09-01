@@ -1,0 +1,187 @@
+--- page 1 ---
+Frontend  Intern  —  OpenFX  
+Team:  Engineering  (Frontend)  |  Duration:  3  to  6  months  |  Location:  Bengaluru  
+About  the  Role  
+OpenFX  builds  the  infrastructure  that  moves  money  across  global  corridors.  Our  web  
+applications
+ 
+are
+ 
+where
+ 
+customers
+ 
+see
+ 
+pricing,
+ 
+initiate
+ 
+transfers,
+ 
+and
+ 
+track
+ 
+money
+ 
+movement,
+ 
+so
+ 
+a
+ 
+number
+ 
+displayed
+ 
+incorrectly
+ 
+is
+ 
+a
+ 
+trust
+ 
+problem,
+ 
+not
+ 
+a
+ 
+cosmetic
+ 
+one.
+ 
+This  internship  is  a  hiring  pipeline,  not  throwaway  work.  You  will  ship  code  to  production  with  
+close
+ 
+review
+ 
+from
+ 
+senior
+ 
+engineers,
+ 
+and
+ 
+strong
+ 
+interns
+ 
+receive
+ 
+full-time
+ 
+offers.
+ 
+What  You  Will  Do  
+1.  Frontend  Development:  Build  and  ship  real  UI  features  using  Astro  with  React  and  
+TypeScript.
+ 2.  Working  with  Live  Data:  Render  rates,  balances,  and  transaction  states  that  update  
+while
+ 
+the
+ 
+user
+ 
+is
+ 
+watching.
+ 3.  Handling  Edge  States:  Cover  loading,  empty,  error,  and  stale  states,  which  is  where  
+most
+ 
+frontend
+ 
+bugs
+ 
+in
+ 
+financial
+ 
+products
+ 
+live.
+ 4.  Writing  Test  Cases:  Write  test  cases  for  the  features  you  build,  covering  the  normal  
+path
+ 
+as
+ 
+well
+ 
+as
+ 
+the
+ 
+failure
+ 
+and
+ 
+edge
+ 
+cases.
+ 5.  Test  Automation:  Automate  those  test  cases  so  they  run  in  CI,  and  keep  the  suite  
+reliable
+ 
+rather
+ 
+than
+ 
+flaky.
+ 6.  Debugging:  Fix  real  bugs  from  the  backlog,  including  reproducing  issues  you  did  not  
+write.
+ 7.  Code  Quality:  Get  your  code  reviewed  properly,  respond  to  comments,  and  follow  the  
+team's
+ 
+Git
+ 
+workflow.
+ 8.  Collaboration:  Work  with  senior  engineers,  product,  and  design  to  turn  requirements  
+into
+ 
+shipped
+ 
+features.
+ 9.  Understanding  FX  Infrastructure:  Build  a  working  understanding  of  the  systems  that  
+move
+ 
+money
+ 
+across
+ 
+corridors
+ 
+and
+ 
+how
+ 
+the
+ 
+frontend
+ 
+fits
+ 
+into
+ 
+them.
+ 
+Requirements  
+●  Pursuing  a  Bachelor's  degree  in  Computer  Science,  Engineering,  or  equivalent  practical  
+ability
+ ●  Solid  foundation  in  JavaScript:  async  behaviour,  array  methods,  objects  
+--- page 2 ---
+●  Working  knowledge  of  React:  components,  props,  state,  hooks,  and  why  a  re-render  
+happens
+ ●  Astro  with  React:  familiarity  with  building  pages  in  Astro  and  using  React  components  
+as
+ 
+interactive
+ 
+islands
+ ●  Comfortable  with  HTML  and  CSS  ●  Basic  understanding  of  HTTP  and  JSON,  and  able  to  read  a  network  call  in  DevTools  ●  Familiarity  with  Git:  branch,  commit,  pull  request  ●  Ability  to  think  through  what  could  break  in  a  feature,  not  just  whether  it  works  ●  At  least  one  project  you  built  yourself  and  can  explain  line  by  line  ●  Genuine  curiosity  and  willingness  to  be  corrected  
+Nice  to  Have  
+●  Exposure  to  TypeScript  ●  Experience  shipping  an  Astro  project,  or  working  with  server-side  rendering  and  partial  
+hydration
+ ●  Exposure  to  Tailwind  or  any  utility  CSS  framework  ●  Any  testing  experience  (Vitest,  Jest,  React  Testing  Library,  Playwright  or  Cypress)  ●  Any  experience  with  real-time  data  (WebSockets,  polling,  SSE)  ●  Interest  in  fintech,  trading,  or  payments  
+ 

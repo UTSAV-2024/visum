@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Getting Started">
+	<h1>Getting Started</h1>
+	<p>
+		This is a second, fully static page — no islands, no client JS at all. It exists to show
+		Astro's file-based routing: <code>src/pages/docs/getting-started.astro</code> maps directly
+		to <code>/docs/getting-started</code>.
+	</p>
+
+	<h2>How this site is put together</h2>
+	<pre><code>src/
+  layouts/BaseLayout.astro   — shared shell, all pages render inside this
+  components/ScoreEstimator.tsx — the one React island, hydrated with client:visible
+  pages/index.astro          — landing page + the island
+  pages/docs/getting-started.astro — this page, pure static HTML</code></pre>
+
+	<h2>Content vs. interactivity</h2>
+	<p>
+		Astro ships zero JavaScript by default and only hydrates a component when a page
+		explicitly asks for it via a <code>client:*</code> directive. That's the split this
+		project demonstrates: static, content-first pages by default, with a React component
+		opted into hydration only where the page genuinely needs state.
+	</p>
+</BaseLayout>

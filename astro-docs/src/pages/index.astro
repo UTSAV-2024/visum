@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ScoreEstimator from '../components/ScoreEstimator.tsx';
+---
+
+<BaseLayout title="AI Visibility Score Estimator">
+	<h1>AI Visibility Score Estimator</h1>
+	<p>
+		A quick, static preview of the kind of signal-based scoring Visum runs on a full crawl.
+		This page is rendered entirely at build time — the checklist below is the only interactive
+		part, and it hydrates as a standalone React island once it scrolls into view.
+	</p>
+
+	<ScoreEstimator client:visible />
+
+	<h2>Why Astro here</h2>
+	<p>
+		Everything above the estimator — headings, copy, layout — ships as plain HTML with zero
+		client-side JavaScript. Only the checklist widget needs interactivity, so it's the only
+		piece that gets hydrated (<code>client:visible</code>), keeping the page fast without
+		giving up a real interactive component where it's actually useful.
+	</p>
+</BaseLayout>
