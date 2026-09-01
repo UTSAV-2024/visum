@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
+import { SITE_URL } from "../lib/config";
 
 export default function TermsOfService() {
   return (
@@ -13,7 +14,7 @@ export default function TermsOfService() {
           name="description"
           content="Visum's terms of service govern the use of our AI agent readiness scanning platform. Review our terms before using the service."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/terms" />
+        <link rel="canonical" href={`${SITE_URL}/terms`} />
         <meta property="og:title" content="Terms of Service — Visum" />
         <meta
           property="og:description"
@@ -190,8 +191,8 @@ export default function TermsOfService() {
                   <h2 className="text-xl font-semibold text-foreground mb-3">Contact</h2>
                   <p>
                     For questions about these terms, please contact us at{" "}
-                    <a href="mailto:utsav@visum.io" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                      utsav@visum.io
+                    <a href="mailto:utsavkumar1283@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2">
+                      utsavkumar1283@gmail.com
                     </a>{" "}
                     or visit our{" "}
                     <Link href="/contact" className="text-accent hover:text-accent/80 underline underline-offset-2">

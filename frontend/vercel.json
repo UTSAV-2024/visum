@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/backend/:path*",
-      "destination": "https://visum-xoe3.onrender.com"
+      "destination": "https://visum-backend.onrender.com"
     }
   ]
 }

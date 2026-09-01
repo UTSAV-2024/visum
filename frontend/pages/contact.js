@@ -3,6 +3,7 @@ import Head from "next/head";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
+import { SITE_URL } from "../lib/config";
 
 export default function Contact() {
   const [name, setName] = useState("");
@@ -31,7 +32,7 @@ export default function Contact() {
     const body = encodeURIComponent(
       `Name: ${name.trim()}\nEmail: ${email.trim()}\n\nMessage:\n${message.trim()}`
     );
-    window.location.href = `mailto:utsav@visum.io?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:utsavkumar1283@gmail.com?subject=${subject}&body=${body}`;
 
     setSubmitted(true);
   }
@@ -44,7 +45,7 @@ export default function Contact() {
           name="description"
           content="Get in touch with the Visum team. Send us a message about AI readiness, partnerships, or support."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/contact" />
+        <link rel="canonical" href={`${SITE_URL}/contact`} />
         <meta property="og:title" content="Contact — Visum" />
         <meta
           property="og:description"
@@ -162,10 +163,10 @@ export default function Contact() {
                   <div>
                     <h3 className="text-sm font-semibold text-foreground mb-3">Email</h3>
                     <a
-                      href="mailto:utsav@visum.io"
+                      href="mailto:utsavkumar1283@gmail.com"
                       className="text-sm text-accent hover:text-accent/80 underline underline-offset-2"
                     >
-                      utsav@visum.io
+                      utsavkumar1283@gmail.com
                     </a>
                   </div>
 

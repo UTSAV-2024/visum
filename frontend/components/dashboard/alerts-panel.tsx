@@ -9,33 +9,6 @@ interface Alert {
   time: string;
 }
 
-const defaultAlerts: Alert[] = [
-  {
-    id: "1",
-    type: "critical",
-    title: "Robots.txt blocking AI crawlers",
-    message:
-      "Your robots.txt file is blocking GPTBot and Claude-Web. AI systems cannot access your content.",
-    time: "2m ago",
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "Missing structured data",
-    message:
-      "No JSON-LD found on homepage. AI assistants cannot reliably understand your content context.",
-    time: "15m ago",
-  },
-  {
-    id: "3",
-    type: "info",
-    title: "Sitemap updated",
-    message:
-      "Your sitemap.xml was refreshed. New pages will be discovered faster.",
-    time: "1h ago",
-  },
-];
-
 const alertIcons = {
   critical: (
     <svg className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
@@ -74,10 +47,11 @@ const alertColors = {
 
 interface AlertsPanelProps {
   className?: string;
+  /** Real alerts derived from the latest scan's open issues. */
+  alerts?: Alert[];
 }
 
-export function AlertsPanel({ className }: AlertsPanelProps) {
-  const [alerts, setAlerts] = useState<Alert[]>(defaultAlerts);
+export function AlertsPanel({ className, alerts = [] }: AlertsPanelProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 

@@ -72,7 +72,7 @@ async def check_mcp(base_url: str, mcp_response: str = None) -> CheckResult:
     if mcp_response and is_valid_mcp_response(mcp_response):
         return CheckResult(
             name="MCP Endpoint",
-            score=20, max_score=20, passed=True,
+            score=10, max_score=10, passed=True,
             description="Checks for a Model Context Protocol endpoint that lets AI agents query your site directly.",
             finding="MCP endpoint found at /.well-known/mcp. AI agents can query your products, inventory, and services directly.",
             fix="MCP endpoint active. Ensure your product catalog stays in sync.",
@@ -109,7 +109,7 @@ async def check_mcp(base_url: str, mcp_response: str = None) -> CheckResult:
     if found_mcp:
         return CheckResult(
             name="MCP Endpoint",
-            score=20, max_score=20, passed=True,
+            score=10, max_score=10, passed=True,
             description="Checks for an MCP endpoint that lets AI agents interact with your site.",
             finding=f"MCP endpoint found at {found_mcp}. AI agents can query your site directly.",
             fix="MCP endpoint active. Keep your product catalog and pricing in sync.",
@@ -118,18 +118,18 @@ async def check_mcp(base_url: str, mcp_response: str = None) -> CheckResult:
     elif found_openapi:
         return CheckResult(
             name="MCP Endpoint",
-            score=10, max_score=20, passed=False, partial=True,
+            score=5, max_score=10, passed=False, partial=True,
             description="Checks for an MCP endpoint that lets AI agents interact with your site.",
             finding=f"OpenAPI spec found at {found_openapi}. Partial agent compatibility. No MCP endpoint detected.",
-            fix="Add a proper MCP endpoint. AgentReady Pro provisions a hosted MCP server for your site automatically.",
+            fix="Add a Model Context Protocol endpoint so AI agents can call your data directly, not just read your OpenAPI schema.",
             details={"endpoint": found_openapi, "type": "openapi"}
         )
     else:
         return CheckResult(
             name="MCP Endpoint",
-            score=0, max_score=20, passed=False,
+            score=0, max_score=10, passed=False,
             description="Checks for an MCP endpoint that lets AI agents query your products and services directly.",
-            finding="No MCP endpoint or OpenAPI spec found. AI agents cannot interact with your site programmatically. Shopify merchants have this built-in.",
-            fix="AgentReady Pro provisions a hosted MCP server at agentready.io/m/your-slug. AI agents can then query your inventory, pricing, and FAQs in real time.",
+            finding="No MCP endpoint or OpenAPI spec found. This is still an emerging standard, so most sites do not have one yet — it is a bonus signal rather than a baseline requirement.",
+            fix="Expose a Model Context Protocol endpoint (e.g. at /mcp) so AI agents can query your inventory, pricing, and FAQs in real time.",
             details={"endpoint": None, "type": None}
         )

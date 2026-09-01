@@ -9,8 +9,10 @@ export function IssuesSection({ checks, filter, className }) {
     setIsVisible(true);
   }, []);
 
-  const failedChecks = checks?.filter((c) => !c.passed && !c.partial) || [];
-  const warningChecks = checks?.filter((c) => c.partial) || [];
+  // Unmeasured checks (measured === false) are neither issues nor passes —
+  // they were excluded from the score, so they don't belong in the issues list.
+  const failedChecks = checks?.filter((c) => c.measured !== false && !c.passed && !c.partial) || [];
+  const warningChecks = checks?.filter((c) => c.measured !== false && c.partial) || [];
 
   const all = filter === "failed" ? failedChecks : filter === "warnings" ? warningChecks : [...failedChecks, ...warningChecks];
 

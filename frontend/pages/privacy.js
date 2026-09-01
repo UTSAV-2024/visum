@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { Container } from "../components/container";
+import { SITE_URL } from "../lib/config";
 
 export default function PrivacyPolicy() {
   return (
@@ -13,7 +14,7 @@ export default function PrivacyPolicy() {
           name="description"
           content="Visum's privacy policy explains how we collect, use, and protect your data, including cookies, Google AdSense, and analytics."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app/privacy" />
+        <link rel="canonical" href={`${SITE_URL}/privacy`} />
         <meta property="og:title" content="Privacy Policy — Visum" />
         <meta
           property="og:description"
@@ -51,8 +52,8 @@ export default function PrivacyPolicy() {
                     Visum (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting
                     your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your
                     information when you visit our website at{" "}
-                    <Link href="https://visum-eight.vercel.app" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                      visum.io
+                    <Link href={SITE_URL} className="text-accent hover:text-accent/80 underline underline-offset-2">
+                      {SITE_URL.replace(/^https?:\/\//, "")}
                     </Link>{" "}
                     (the &ldquo;Site&rdquo;) and use our AI agent readiness scanning service.
                   </p>
@@ -270,8 +271,8 @@ export default function PrivacyPolicy() {
                   </ul>
                   <p className="mt-3">
                     To exercise any of these rights, please contact us at{" "}
-                    <a href="mailto:utsav@visum.io" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                      utsav@visum.io
+                    <a href="mailto:utsavkumar1283@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2">
+                      utsavkumar1283@gmail.com
                     </a>.
                     We will respond to your request within 30 days.
                   </p>
@@ -315,8 +316,8 @@ export default function PrivacyPolicy() {
                   <ul className="list-disc pl-5 mt-2 space-y-1">
                     <li>
                       Email:{" "}
-                      <a href="mailto:utsav@visum.io" className="text-accent hover:text-accent/80 underline underline-offset-2">
-                        utsav@visum.io
+                      <a href="mailto:utsavkumar1283@gmail.com" className="text-accent hover:text-accent/80 underline underline-offset-2">
+                        utsavkumar1283@gmail.com
                       </a>
                     </li>
                     <li>

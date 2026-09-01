@@ -78,7 +78,7 @@ async def check_schema_ld(html: str) -> CheckResult:
             score=0, max_score=20, passed=False,
             description="Checks for JSON-LD structured data that helps AI agents understand your content.",
             finding="No JSON-LD structured data found. AI agents must guess what your site is about.",
-            fix="Add JSON-LD schema markup to your page. Start with Organization schema for your homepage and Product schema for product pages. AgentReady Pro generates this automatically.",
+            fix="Add JSON-LD schema markup to your page. Start with Organization schema for your homepage and Product schema for product pages.",
             details={"schemas_found": 0}
         )
  
@@ -115,9 +115,9 @@ async def check_schema_ld(html: str) -> CheckResult:
         name="JSON-LD Structured Data",
         score=score, max_score=20,
         passed=passed, partial=partial,
-        description="Checks for valid JSON-LD structured data. Schema markup improves AI agent understanding of your site by 67%.",
+        description="Checks for valid JSON-LD structured data. Schema markup gives AI systems explicit, machine-readable facts about your content instead of forcing them to infer meaning from raw HTML.",
         finding=finding,
-        fix="Add or complete your JSON-LD schema. AgentReady Pro auto-generates schema from your site content.",
+        fix="Add or complete your JSON-LD schema so AI systems can parse your content instead of guessing.",
         details={"schemas_found": len(schemas), "types": all_types,
                  "high_value_types": [t for t, _, hv in validations if hv],
                  "complete_schemas": [t for t, m, _ in validations if len(m) == 0]}

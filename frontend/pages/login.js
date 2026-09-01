@@ -1,0 +1,184 @@
+import { useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import Head from "next/head";
+import { AuthShell } from "../components/auth/auth-shell";
+import { GoogleButton, AuthDivider } from "../components/auth/google-button";
+import { getSupabaseBrowserClient } from "../lib/supabase/client";
+import { isAuthEnabled } from "../lib/config";
+import { track } from "../lib/posthog";
+import { safeNext } from "../lib/safe-next";
+import { describeAuthError, CREDENTIALS_REJECTED } from "../lib/auth-errors";
+
+// Reasons the OAuth callback can bounce someone back here, in plain English.
+const CALLBACK_ERRORS = {
+  oauth_denied: "Google sign-in was cancelled.",
+  missing_code: "That sign-in link is incomplete. Please try again.",
+  exchange_failed: "That sign-in link has expired. Please try again.",
+  auth_unavailable: "Authentication is not configured yet. Please try again later.",
+};
+
+export default function Login() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  // Set when the credentials were rejected, which is also the "you may not have
+  // an account yet" case — Supabase won't tell us which.
+  const [offerSignup, setOfferSignup] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const next = safeNext(router.query.next);
+  const callbackError = CALLBACK_ERRORS[router.query.error];
+  const shownError = error || callbackError || "";
+
+  // Carry the address they already typed so creating an account is one click,
+  // not a re-type.
+  const signupHref = `/signup?next=${encodeURIComponent(next)}${
+    email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
+  }`;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setOfferSignup(false);
+
+    if (!email.trim() || !password) {
+      setError("Enter your email and password.");
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      setError("Authentication is not configured yet. Please try again later.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (signInError) {
+        const { message, code } = describeAuthError(signInError, { context: "signin" });
+        setError(message);
+        setOfferSignup(code === CREDENTIALS_REJECTED);
+        setSubmitting(false);
+        return;
+      }
+      track("login_success", {});
+      router.replace(next);
+    } catch (err) {
+      // signInWithPassword normally returns errors rather than throwing, but a
+      // thrown one is still most likely the network — describe it the same way.
+      setError(describeAuthError(err, { context: "signin" }).message);
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Sign in — Visum</title>
+        <meta name="robots" content="noindex" />
+      </Head>
+      <AuthShell
+        title="Welcome back"
+        subtitle="Sign in to your Visum dashboard."
+        footer={
+          <>
+            Don&apos;t have an account?{" "}
+            <Link
+              href={`/signup?next=${encodeURIComponent(next)}`}
+              className="font-medium text-accent hover:underline"
+            >
+              Create one
+            </Link>
+          </>
+        }
+      >
+        {!isAuthEnabled && (
+          <div className="mb-4 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            Authentication isn&apos;t configured on this deployment yet.
+          </div>
+        )}
+
+        <GoogleButton next={next} disabled={!isAuthEnabled} onError={setError} />
+
+        <AuthDivider />
+
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError("");
+              }}
+              placeholder="you@example.com"
+              disabled={submitting}
+              className="h-11 w-full rounded-xl border border-border bg-secondary/50 px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                Password
+              </label>
+            </div>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError("");
+              }}
+              placeholder="••••••••"
+              disabled={submitting}
+              className="h-11 w-full rounded-xl border border-border bg-secondary/50 px-4 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+            />
+          </div>
+
+          {shownError && (
+            <div role="alert" className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-destructive">{shownError}</p>
+              {offerSignup && (
+                <p className="text-sm text-muted-foreground">
+                  New to Visum?{" "}
+                  <Link
+                    href={signupHref}
+                    className="font-semibold text-accent hover:underline"
+                    onClick={() => track("signup_offered_after_failed_login", {})}
+                  >
+                    Create an account
+                  </Link>{" "}
+                  — it takes a moment, and you can use Google above.
+                </p>
+              )}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting || !isAuthEnabled}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      </AuthShell>
+    </>
+  );
+}

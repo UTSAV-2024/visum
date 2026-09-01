@@ -5,45 +5,94 @@ Maintained automatically: items get ticked when the corresponding change/commit 
 
 ## P0 — Broken product (fix first)
 
-- [ ] Install Playwright Chromium in the local backend venv (`python -m playwright install chromium`)
-- [ ] Add `playwright install chromium` to the Render build command so the deployed backend can measure speed
-- [ ] Make the Page Load Speed check report "not measured" honestly (no fabricated 5/10) when Playwright is unavailable
-- [ ] Make the JavaScript Rendering check fail/skip honestly when Playwright falls back to static HTML (currently compares static-vs-static and always awards 10/10, `backend/app/crawler.py:172`)
+- [x] Install Playwright Chromium in the local backend venv (`python -m playwright install chromium`) — installed in `backend/venv` (exit 0)
+- [x] Add `playwright install chromium` to the Render build command so the deployed backend can measure speed — present in `render.yaml` buildCommand
+- [x] Make the Page Load Speed check report "not measured" honestly (no fabricated 5/10) when Playwright is unavailable — `speed.py` now returns `measured=False`, excluded from total
+- [x] Make the JavaScript Rendering check fail/skip honestly when Playwright falls back to static HTML — crawler now sets `js_rendered`; `rendering.py` reports `measured=False` instead of comparing static-vs-static
 
 ## P0 — Dogfooding (your own site scores 45/100)
 
-- [x] Add JSON-LD structured data to the Visum frontend (`WebSite` + `SoftwareApplication` schema) — added to `frontend/pages/_document.js`
-- [x] Add a complete `llms.txt` to the Visum frontend (project name, description, doc links) — added at `frontend/public/llms.txt`
-- [ ] Add an MCP endpoint (or OpenAPI spec) to Visum itself
-- [ ] Verify the deployed site scores 90+ on its own scanner; use that as a marketing point
+- [x] Add JSON-LD structured data to the Visum frontend — `_document.js` now emits `WebSite` + `Organization` + `SoftwareApplication` + `Service` (the `Service` node is a high-value type that scores the full 20/20); also published `frontend/public/openapi.json`
+- [x] Add a complete `llms.txt` to the Visum frontend — restructured to the standard `>` summary + detail-paragraph shape so it parses as complete (10/10) at `frontend/public/llms.txt`
+- [x] Add an MCP endpoint (or OpenAPI spec) to Visum itself — real MCP JSON-RPC endpoint at `frontend/pages/api/mcp.js` (`initialize`/`tools/list`/`tools/call → scan_website`, proxies the live scan API) **and** an OpenAPI spec at `/openapi.json`. Both pass the scanner's own validators; MCP check scores 10/10.
+- [x] Verify the deployed site scores 90+ on its own scanner — **confirmed: 100/100** ("Excellent — AI Optimized") for https://visum-eight.vercel.app, measured with a **fully working scanner** (all 8 checks): robots 15/15, JSON-LD 20/20, llms.txt 10/10, MCP 10/10, JS-rendering 10/10, meta 10/10, sitemap 5/5, Page Load Speed 10/10 (real TTFB 117ms, load 806ms). The earlier 89/100 was **not** a CDN artifact — it was a measurement bug (the crawler charged its own 2s hydration wait to the site, making a 10/10 speed score mathematically unreachable for *every* scanned site). Fixed via the Navigation Timing API.
+- [x] **Playwright now works on the deployed Render backend** — production scans run all 8 checks. Root cause was that Chromium needs system libraries Render's native Python runtime cannot install without root; the fix is the Docker + Playwright base image (`render.yaml` / `backend/Dockerfile`). Redeploying the old service was not enough: **a Render service's runtime cannot be changed in place**, so the Python-runtime service had to be replaced by a new Blueprint-managed Docker service (`visum-backend`, free tier). Verified 2026-07-25 against `example.com`: `unmeasured_count: 0`, JS Rendering `measured: true` 10/10 (19 static vs 19 rendered words), Page Load Speed `measured: true` 10/10 (159ms TTFB / 300ms load). `MAX_CONCURRENT_SCANS: 1` keeps a single Chromium inside the free tier's 512 MB.
+- [x] Retire the old Python-runtime Render service (`visum`, `visum-xoe3.onrender.com`) — deleted 2026-07-25 after production was verified on the Docker backend; the host no longer resolves
+- [x] Repoint the frontend at the new backend — note that `getBackendUrl()`'s fallback is **not** what production uses: Vercel's `NEXT_PUBLIC_API_URL` overrides it, and because `NEXT_PUBLIC_*` is inlined at build time the var must be changed *before* the build that ships it. Changing code alone silently kept the old URL. Verified 2026-07-25: CSP names the new backend and a live `/api/mcp` scan returns `unmeasured_count: 0` with all 8 checks measured.
 
 ## P1 — Trust: copy and numbers
 
-- [ ] Write unique "WHY IT MATTERS" copy per check (currently the identical paragraph repeats on every issue)
-- [ ] Fix IMPACT text so "Medium" severity doesn't say "significantly affects" (severity label and sentence must agree)
-- [ ] Remove audience-mismatched copy ("Shopify merchants have this built-in" shown for non-Shopify sites; Cursor/Copilot llms.txt copy shown for e-commerce scans)
-- [ ] Fix "Estimated score gain" so it never exceeds the points actually available on that check
-- [ ] Reconcile "AVG SCORE %" vs "total/100" (63% shown next to 50/100 confuses users)
-- [ ] Remove or cite the "3x more likely to appear in AI answers" statistic
-- [ ] Remove or cite "every point increase correlates with higher citation rates"
+- [x] Write unique "WHY IT MATTERS" copy per check — per-check `whyItMatters` in `check-detail-card.tsx`
+- [x] Fix IMPACT text so "Medium" severity doesn't say "significantly affects" — `IMPACT_SENTENCE` map keyed by severity
+- [x] Remove audience-mismatched copy — dropped "Shopify merchants have this built-in" (`mcp.py`); llms.txt copy now says it's low-priority for e-commerce
+- [x] Fix "Estimated score gain" so it never exceeds the points actually available — capped to `max_score - score` (`cappedGain`)
+- [x] Reconcile "AVG SCORE %" vs "total/100" — StatsStrip now uses the weighted `earned/available` so it matches the headline
+- [x] Remove or cite the "3x more likely to appear in AI answers" statistic — no such uncited stat remains on the real result flow (remaining `2.3x`/`4x` copy lives only in sample-data demos behind the "preview" banner)
+- [x] Remove or cite "every point increase correlates with higher citation rates" — removed from `check-detail-card.tsx`; also removed the uncited "67%" schema stat
 
 ## P1 — Check design correctness
 
-- [ ] Reweight the MCP Endpoint check (20 pts that ~every real site auto-fails feels rigged; make it a bonus or reduce weight)
-- [ ] Fix robots.txt scoring: absence of robots.txt means "all crawlers allowed" and should not score 0/15 with misleading copy
-- [ ] Harden `_fetch` (`backend/app/crawler.py:28`): check content-type and detect soft-404s so an SPA shell returned with HTTP 200 doesn't count as llms.txt/sitemap
-- [ ] Add a regression test: a site with no llms.txt must yield "No llms.txt file found", never "found but incomplete"
+- [x] Reweight the MCP Endpoint check — reduced 20→10 and reframed as an emerging "bonus" signal; scorer normalises to /100 so weights stay consistent
+- [x] Fix robots.txt scoring: absence of robots.txt means "all crawlers allowed" and should not score 0/15 — now scores 13/15 and passes, with honest copy
+- [x] Harden `_fetch`: checks content-type and detects soft-404s (HTML shell for a .txt/.xml/JSON resource) so an SPA 200 doesn't count as llms.txt/sitemap
+- [x] Add a regression test: a site with no llms.txt must yield "No llms.txt file found", never "found but incomplete" — `test_llms_missing_says_not_found_not_incomplete` (whitespace-only bodies now treated as absent)
 
 ## P2 — Product honesty
 
 - [x] Gate unfinished mock pages (Team Management, Competitor Intelligence, Reports, AI Insights) behind "coming soon" or finish them — all 7 demo routes now show a "preview / sample data" banner via `frontend/components/app-layout.tsx`
-- [ ] Audit nav so users can't click into non-functional billing/API-key screens
+- [x] Audit nav so users can't click into non-functional billing/API-key screens — Billing / API / Integrations / Settings sub-items (which pointed at `/team` or dead `#`) are now `disabled` with a "Soon" tag (`sidebar/navigation.ts`, `nav-item.tsx`); dead Documentation/Discord help links in `usage-meter.tsx` render as non-clickable "Soon" labels
+
+## P0 — Accounts, quota and billing (2026-07-22)
+
+- [x] Require authentication before any scan — `/api/scan` is the only scan path and rejects anonymous callers (401); the browser no longer talks to the scanner backend directly
+- [x] Gate every app and scan route server-side — `withAuthRequired` in each page's `getServerSideProps`; verified `/dashboard`, `/result`, `/analytics`, `/crawl-explorer`, `/prompt-intelligence` all 307 to `/login?next=…` when signed out
+- [x] Add Google OAuth alongside email/password — `GoogleButton` + server-side code exchange at `/api/auth/callback` (needs the provider enabled and the callback URL allow-listed in Supabase)
+- [x] Fix the "Run a scan" nav button — scrolls to the scan form when signed in, otherwise sends the visitor through sign-in and returns them to `#scan` with their typed URL preserved
+- [x] Replace the hardcoded "Alex Chen" with the real user — name, email and Google avatar from `profiles`, server-rendered with the page
+- [x] Replace the placeholder Storage/Scans meters with live data — real plan, quota and storage from `/api/account`
+- [x] Enforce a 3-scan free allowance with an "Out of Free Scans" modal — verified: scans 1–3 succeed, the 4th returns 402 with the quota payload that opens the modal
+- [x] Track usage server-side — `consume_scan_quota` claims a scan under a row lock before the scan runs and `release_scan_quota` returns it if the scan fails (verified both ways)
+- [x] Add the schema: `profiles`, `subscriptions`, `usage`, `payments`, a `storage_usage` view, and `scans.storage_bytes`/`status` — with RLS scoped to `auth.uid()` on every table
+- [x] Make quota untamperable from the browser — verified: a signed-in user cannot call the quota functions, raise their own `scan_limit`, zero their own counter, insert a payment, or forge a scan row
+- [x] Add the pricing page — Free / Pro ($15, 30 scans per week) / Ultimate ($70, 100 scans per week), Pro highlighted, each with price, scan limit, storage and features
+- [x] Subscription activation updates tier, scan limit, renewal date and billing status and writes a `payments` row — verified; weekly quotas reset automatically from the renewal date (verified across a 2-week gap)
+- [~] Wire a real payment provider — Stripe Checkout is built: `/api/subscription/checkout` creates the session, `/api/subscription/webhook` is the only path that grants a plan, and the pricing page uses checkout first and falls back to the manual grant when Stripe is unconfigured. The webhook verifies signatures (forged and unsigned requests are rejected 400, verified locally) and is idempotent against Stripe's at-least-once delivery, which would otherwise reset `scans_used` to 0 and hand out a free allowance on a replay. **Still requires the user**: create the Stripe products/prices and set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_ULTIMATE` (see `frontend/.env.example`). Untested against real Stripe traffic until those exist.
+- [ ] Add a unique index on `payments (provider_payment_id) where provider = 'stripe'` — the webhook's replay guard is a read-then-write, so two simultaneous deliveries of the same event could still both pass it. The index would make the double-insert impossible at the database level. Left for the user: it's a production schema change.
+- [ ] Enable Google in the Supabase dashboard and allow-list `<domain>/api/auth/callback` — **requires the user**
+
+## P2 — Hardcoded values cleanup (2026-07-25)
+
+- [x] Centralize the production domain — `frontend/lib/site.js` exports `SITE_URL`, replacing ~20 literal `https://visum-eight.vercel.app` occurrences across `_document.js`, `about.js`, `contact.js`, `pricing.js`, `privacy.js`, `terms.js`, `result.js`, and the CSP `connect-src` in `next.config.mjs`
+- [x] Centralize the backend URL resolution — `getBackendUrl(fallback)` in `frontend/lib/site.js` unifies the `VISUM_API_URL`/`API_URL`/`NEXT_PUBLIC_API_URL` env precedence used by `api/mcp.js`, `api/scan.js`, `api/competitors/scan.js`, and `next.config.mjs`'s CSP; each call site keeps its own fallback (prod URL for MCP/CSP, `localhost:8000` for the scan routes, since those may run against a local dev backend)
+- [x] Make `pricing.js`'s meta description and the "3 scans" copy in `about.js`/`index.js` read from `lib/plans.js` (`PLANS.free.scanLimit`, `PLANS.pro`, `PLANS.ultimate`) instead of hand-written numbers
+- [x] Fix stale backend domain in `docs/DEPLOYMENT.md` — it pointed at a host that never existed; every reference now points at the live backend
+- [x] `privacy.js` linked to `visum.io` as stale link text while the `href` already pointed at the real Vercel domain — link text now derives from `SITE_URL` too, so both match
+
+## P0 — Auth broken in production (2026-07-25)
+
+- [x] **The CSP blocked every Supabase request from the browser** — `connect-src` never included the Supabase host (missing since the CSP was introduced in `95190e5`), so `signInWithPassword` failed at the network layer and the raw `TypeError: Failed to fetch` was rendered to users. This broke *all* email/password sign-in and sign-up, not just unknown emails. Proven in the deployed page: a host inside `connect-src` returned 200 while Supabase returned "Failed to fetch" from the same origin. Fixed by deriving the Supabase origin from `SUPABASE_URL` in the `connect-src` list.
+- [x] Stop rendering raw auth errors — `lib/auth-errors.js` maps Supabase failures to copy a person can act on, so a blocked request reads as "we couldn't reach the sign-in service" rather than "Failed to fetch"
+- [x] Offer account creation when sign-in is rejected — the login page now surfaces a "Create an account" link carrying the typed address. Note Supabase deliberately returns the same error for *wrong password* and *no such account* (anti-enumeration), so the copy covers both rather than claiming the account doesn't exist.
+- [ ] Verify the sign-in flow interactively on the Vercel deploy — the local `next start` build does not hydrate on this machine, so no click or keystroke reaches React and the flow cannot be exercised locally (the CSP header and the error-mapping logic *were* verified locally)
+
+## P1 — AI Analytics made real (2026-07-25)
+
+- [x] **Replaced the sample-data AI Analytics page with real AI-crawler tracking** — `tracked_sites` + `bot_visits` schema (RLS: browser reads only, all writes service-role), `/api/collect` ingest, `/api/analytics/bots` + `/api/analytics/sites`, and a rebuilt `/analytics` showing only measured data. `/analytics` is off the preview-banner list.
+- [x] Collection is **server-side, not a browser pixel** — AI crawlers largely don't execute JavaScript (the very thing our JS-rendering check measures), so a client-side snippet would have recorded almost nothing. Setup ships Next.js middleware, a Cloudflare Worker, and a plain HTTP/batch format.
+- [x] Deleted the fabricated metrics that can never be measured — **Tokens Consumed** most of all: no AI provider publishes per-site token usage, so it could only ever have been invented. Also removed the 9 other unreferenced sample-data components (recoverable from git).
+- [x] Verified end-to-end against the live database: unauthenticated and bad-key ingest rejected 401; a real GPTBot UA recorded; an ordinary browser UA dropped (`recorded:0, skipped:1`); a mixed batch recorded 2 of 3. Confirmed in Postgres that no raw IP is stored (32-char salted hash) and non-crawler traffic never lands. Bot detection unit-tested 9/9, including negatives — Googlebot is deliberately *not* treated as an AI crawler.
+- [ ] Verify AI crawler user-agents against vendor IP ranges — every row currently lands `verified: false` because a user-agent is a claim, not proof, and the UI says so. Real verification means checking source IPs against OpenAI/Anthropic/Perplexity's published range lists (and reverse-DNS for Google/Apple), refreshed periodically.
+- [x] **Decided: cut the demo pages rather than build them.** Six of twelve nav destinations rendered invented data. Each needed a data source that doesn't exist, and `/prompt-intelligence` + `/insights` would need paid per-check AI API calls; a "preview" banner doesn't repair the trust damage of a user clicking half the nav and finding sample data. Deleted `/insights`, `/prompt-intelligence`, `/crawl-explorer`, `/hosted-mcp`, `/org-command-center`, `/optimization-workspace` and their components — ~9,900 lines. Every remaining route renders the user's own data.
+- [x] Fixed the navigation defects the audit surfaced: "AI Visibility" was a second link to `/dashboard`, "Comparisons" a second link to `/reports`, and "Recent Scans" pointed at `/result` — which reads `sessionStorage`, so it would have shown an empty page to anyone who hadn't just scanned. Scan history already lives on the Dashboard.
+- [x] Removed the now-unused `PreviewBanner`, and pruned the deleted routes from `proxy.js`, `_app.js`, `navigation.ts` and the README (which also still claimed `/result` was public — it isn't).
+- [x] Verified after the cut: all 7 surviving app routes still 307 to `/login?next=…` when signed out, all 6 deleted routes 404, and the marketing pages are untouched.
 
 ## P2 — Security & repo hygiene
 
-- [ ] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only)
-- [ ] Rotate the Supabase service-role key
-- [ ] Remove duplicate lockfile (root `package-lock.json` vs `frontend/package-lock.json`) or set `turbopack.root` in next.config
-- [ ] Consolidate the two Python venvs (root `venv/` and `backend/venv/`)
-- [ ] Remove committed debug/scratch files: `backend/debug_cors.py`, `backend/restart_backend.py`, `backend/test_manual.py`, `testresultsday2.txt`
-- [ ] Add `nul` (and similar Windows reserved names) awareness — the stray `frontend/nul` file broke the entire build once already
+- [~] Move `SUPABASE_SERVICE_KEY` out of `frontend/.env.local` (service-role key must live server-side only) — verified: the key is read only in `pages/api/*.js` (server-side) via `process.env`, with no `NEXT_PUBLIC_` prefix, so it never reaches the client bundle. `.env.local` is untracked. Physically relocating it to a dedicated server env is still a deployment follow-up.
+- [ ] Rotate the Supabase service-role key — **requires the user** (Supabase dashboard action; cannot be done from code)
+- [x] Remove duplicate lockfile / set `turbopack.root` in next.config — `turbopack.root` pinned to the frontend dir in `next.config.mjs`
+- [ ] Consolidate the two Python venvs (root `venv/` and `backend/venv/`) — left for the user (destructive local env change; both are gitignored)
+- [x] Remove committed debug/scratch files: `backend/debug_cors.py`, `backend/restart_backend.py`, `backend/test_manual.py`, `testresultsday2.txt` — removed (also removed stray `backend/.env.example.backup1`)
+- [x] Add `nul` (and similar Windows reserved names) awareness — added to root `.gitignore`
+- [ ] **React does not hydrate in the local production build** (`next build` + `next start`, Next 16.2.9 / Turbopack). The page paints its server HTML and freezes: the hero `<h1>` stays at its initial `opacity: 0`, no `__react*` keys are attached to any DOM node, and no click handler fires — with **no console error at all**. `window.next.router` is ready and both `/` and `/_app` are registered, so the client runtime boots and hydration is simply never reached. Confirmed **pre-existing**: reproduces on unmodified `HEAD` with the working tree stashed, so it is not caused by the accounts work. This blocks all local browser verification of interactive UI; server-rendered HTML and the API/database layer are verifiable and were verified. Related to (possibly the same root cause as) the `next dev` HMR crash loop.

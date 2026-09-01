@@ -64,8 +64,10 @@ def parse_llms_txt(content: str) -> dict:
  
 async def check_llms_txt(llms_content: str = "") -> CheckResult:
     """Check for valid llms.txt file."""
- 
-    if not llms_content:
+
+    # Treat whitespace-only bodies as absent — a soft-404 or blank file is not
+    # a "present but incomplete" llms.txt.
+    if not llms_content or not llms_content.strip():
         return CheckResult(
             name="llms.txt File",
             score=0, max_score=10, passed=False,

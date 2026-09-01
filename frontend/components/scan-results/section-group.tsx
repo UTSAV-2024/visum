@@ -2,19 +2,25 @@ import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 
 function CheckBar({ check }) {
+  const measured = check.measured !== false;
   const pct = Math.round((check.score / check.max_score) * 100);
-  const isPassed = check.passed;
-  const isPartial = check.partial;
+  const isPassed = measured && check.passed;
+  const isPartial = measured && check.partial;
 
   return (
     <div className="group flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-muted/10 transition-colors cursor-pointer">
       <span className={cn(
         "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
+        !measured ? "bg-muted/20 text-muted-foreground" :
         isPassed ? "bg-green-500/10 text-green-500" :
         isPartial ? "bg-orange-500/10 text-orange-500" :
         "bg-red-500/10 text-red-500"
       )}>
-        {isPassed ? (
+        {!measured ? (
+          <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+          </svg>
+        ) : isPassed ? (
           <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
           </svg>
@@ -34,18 +40,26 @@ function CheckBar({ check }) {
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <div className="w-16 sm:w-24 h-1.5 rounded-full bg-muted/20 overflow-hidden">
-          <div
-            className={cn(
-              "h-full rounded-full transition-all duration-500",
-              isPassed ? "bg-green-500" : isPartial ? "bg-orange-500" : "bg-red-500"
-            )}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <span className="font-mono text-[10px] font-bold tabular-nums text-foreground w-10 text-right">
-          {pct}%
-        </span>
+        {measured ? (
+          <>
+            <div className="w-16 sm:w-24 h-1.5 rounded-full bg-muted/20 overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  isPassed ? "bg-green-500" : isPartial ? "bg-orange-500" : "bg-red-500"
+                )}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="font-mono text-[10px] font-bold tabular-nums text-foreground w-10 text-right">
+              {pct}%
+            </span>
+          </>
+        ) : (
+          <span className="font-mono text-[10px] font-semibold tabular-nums text-muted-foreground w-10 text-right">
+            n/a
+          </span>
+        )}
       </div>
     </div>
   );

@@ -1,20 +1,38 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
-import { WEEKLY_SCORES, MONTHLY_SCORES } from "./data";
 
-export function ScoreEvolution({ className }) {
+// `series` is the real per-scan score line: [{ label, score }], oldest first.
+export function ScoreEvolution({ className, series = [] }) {
   const [isVisible, setIsVisible] = useState(false);
   const [animated, setAnimated] = useState(false);
-  const [view, setView] = useState("weekly");
   const [hovered, setHovered] = useState(null);
 
-  const data = view === "weekly" ? WEEKLY_SCORES : MONTHLY_SCORES;
+  // One point can't draw a line; the chart needs at least two scans.
+  const data = series;
 
   useEffect(() => {
     setIsVisible(true);
     const t = setTimeout(() => setAnimated(true), 300);
     return () => clearTimeout(t);
-  }, [view]);
+  }, []);
+
+  if (data.length < 2) {
+    return (
+      <div
+        className={cn(
+          "relative flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-border bg-card p-5 text-center",
+          className
+        )}
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest text-foreground">
+          Score Evolution
+        </p>
+        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+          Run at least two scans and your score trend will chart here.
+        </p>
+      </div>
+    );
+  }
 
   const maxVal = 100;
   const minVal = 30;
@@ -30,7 +48,6 @@ export function ScoreEvolution({ className }) {
   const getY = (v) => pad.top + ch - ((v - minVal) / range) * ch;
 
   const currentLine = data.map((d, i) => `${getX(i)},${animated ? getY(d.score) : getY(minVal)}`).join(" ");
-  const prevLine = data.map((d, i) => `${getX(i)},${animated ? getY(d.previous) : getY(minVal)}`).join(" ");
 
   return (
     <div
@@ -49,16 +66,7 @@ export function ScoreEvolution({ className }) {
             </svg>
             <p className="text-xs font-semibold uppercase tracking-widest text-foreground">Score Evolution</p>
           </div>
-          <div className="flex rounded-lg bg-muted/20 p-0.5">
-            {["weekly", "monthly"].map((v) => (
-              <button key={v} onClick={() => setView(v)}
-                className={cn("rounded-md px-2.5 py-1 text-[10px] font-semibold transition-all",
-                  view === v ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}>
-                {v === "weekly" ? "Weekly" : "Monthly"}
-              </button>
-            ))}
-          </div>
+          <span className="text-[10px] text-muted-foreground/60">{data.length} scans</span>
         </div>
 
         <div className="relative w-full" style={{ aspectRatio: "500/180" }}>
@@ -71,7 +79,6 @@ export function ScoreEvolution({ className }) {
             ))}
             <defs><linearGradient id="evoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7c3aed" stopOpacity="0.15" /><stop offset="100%" stopColor="#7c3aed" stopOpacity="0" /></linearGradient></defs>
             <path d={`${currentLine} ${getX(data.length - 1)},${getY(minVal)} ${getX(0)},${getY(minVal)}`} fill="url(#evoGrad)" className="transition-all duration-1000 ease-out" />
-            <polyline points={prevLine} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 3" className="transition-all duration-1000 ease-out" style={{ opacity: animated ? 0.5 : 0 }} />
             <polyline points={currentLine} fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-1000 ease-out" />
             {data.map((d, i) => {
               const x = getX(i);
@@ -85,24 +92,25 @@ export function ScoreEvolution({ className }) {
               );
             })}
             {data.map((d, i) => (
-              <text key={i} x={getX(i)} y={height - 4} textAnchor="middle" className="fill-muted-foreground/40" fontSize="7">{d[view === "weekly" ? "week" : "month"]}</text>
+              <text key={i} x={getX(i)} y={height - 4} textAnchor="middle" className="fill-muted-foreground/40" fontSize="7">{d.label}</text>
             ))}
           </svg>
           {hovered !== null && (
             <div className="absolute bg-card border border-border rounded-lg px-3 py-2 shadow-lg pointer-events-none z-10" style={{ left: `${(hovered / (data.length - 1)) * 100}%`, top: "0%", transform: "translate(-50%, -120%)" }}>
-              <p className="text-[9px] text-muted-foreground">{data[hovered][view === "weekly" ? "week" : "month"]}</p>
+              <p className="text-[9px] text-muted-foreground">{data[hovered].label}</p>
               <p className="text-xs font-bold text-foreground">{data[hovered].score}</p>
-              <p className="text-[9px] text-muted-foreground/60">Prev: {data[hovered].previous}</p>
             </div>
           )}
         </div>
 
         <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground/60">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" /> Current</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-500" /> Previous</span>
-          </div>
-          <span>+{data[data.length - 1].score - data[0].score} pts growth</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent" /> Score</span>
+          <span>
+            {(() => {
+              const g = data[data.length - 1].score - data[0].score;
+              return `${g >= 0 ? "+" : ""}${g} pts since first scan`;
+            })()}
+          </span>
         </div>
       </div>
     </div>

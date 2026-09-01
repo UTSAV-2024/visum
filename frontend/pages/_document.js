@@ -1,4 +1,5 @@
 import { Html, Head, Main, NextScript } from "next/document";
+import { SITE_URL } from "../lib/config";
 
 export default function Document() {
   return (
@@ -26,7 +27,7 @@ export default function Document() {
           name="description"
           content="See how AI agents like ChatGPT and Claude read your website. Free scan in 30 seconds."
         />
-        <link rel="canonical" href="https://visum-eight.vercel.app" />
+        <link rel="canonical" href={SITE_URL} />
 
         {/* Robots */}
         <meta name="robots" content="index, follow" />
@@ -43,27 +44,52 @@ export default function Document() {
               "@graph": [
                 {
                   "@type": "WebSite",
-                  "@id": "https://visum-eight.vercel.app/#website",
+                  "@id": `${SITE_URL}/#website`,
                   name: "Visum",
-                  url: "https://visum-eight.vercel.app",
+                  url: SITE_URL,
                   description:
                     "Free AI-readiness scanner. See how AI systems like ChatGPT, Claude, and Perplexity read your website — score, findings, and fixes in about 20 seconds.",
                 },
                 {
+                  "@type": "Organization",
+                  "@id": `${SITE_URL}/#org`,
+                  name: "Visum",
+                  url: SITE_URL,
+                  description:
+                    "Makers of Visum, the free AI-readiness scanner for websites.",
+                },
+                {
                   "@type": "SoftwareApplication",
-                  "@id": "https://visum-eight.vercel.app/#app",
+                  "@id": `${SITE_URL}/#app`,
                   name: "Visum — AI Agent Readiness Scanner",
-                  url: "https://visum-eight.vercel.app",
+                  url: SITE_URL,
                   applicationCategory: "DeveloperApplication",
                   operatingSystem: "Web",
                   offers: {
                     "@type": "Offer",
                     price: "0",
                     priceCurrency: "USD",
-                    description: "Free scan, no account required",
+                    description: "Free account, 3 free scans",
                   },
                   description:
                     "Runs 8 technical checks (robots.txt, JSON-LD, llms.txt, MCP endpoint, JavaScript rendering, meta tags, sitemap, page speed) and returns a 0–100 AI-visibility score with a prioritized fix list.",
+                },
+                {
+                  "@type": "Service",
+                  "@id": `${SITE_URL}/#scan-service`,
+                  name: "AI-Readiness Website Scan",
+                  serviceType: "AI visibility analysis",
+                  provider: { "@id": `${SITE_URL}/#org` },
+                  areaServed: "Worldwide",
+                  url: SITE_URL,
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                    description: "Free account, 3 free scans",
+                  },
+                  description:
+                    "Scans any public website the way AI crawlers do and returns a 0–100 AI-visibility score with prioritized, per-check fixes.",
                 },
               ],
             }),
@@ -73,7 +99,8 @@ export default function Document() {
         {/* Icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-        <link rel="apple-touch-icon" href="/icon.svg" sizes="any" type="image/svg+xml" />
+        {/* iOS ignores SVG here and falls back to a screenshot of the page. */}
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <link rel="manifest" href="/site.webmanifest" />
 
         {/* Open Graph */}
@@ -84,8 +111,8 @@ export default function Document() {
           property="og:description"
           content="See how AI agents like ChatGPT and Claude read your website. Free scan in 30 seconds."
         />
-        <meta property="og:url" content="https://visum-eight.vercel.app" />
-        <meta property="og:image" content="https://visum-eight.vercel.app/og-image.svg" />
+        <meta property="og:url" content={SITE_URL} />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="Visum — AI Agent Readiness Scanner. Get your free AI visibility score." />
@@ -97,7 +124,7 @@ export default function Document() {
           name="twitter:description"
           content="See how AI agents like ChatGPT and Claude read your website. Free scan in 30 seconds."
         />
-        <meta name="twitter:image" content="https://visum-eight.vercel.app/og-image.svg" />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.svg`} />
       </Head>
       <body className="antialiased">
         <Main />

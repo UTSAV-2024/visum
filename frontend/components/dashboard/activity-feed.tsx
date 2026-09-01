@@ -9,51 +9,6 @@ interface Activity {
   timestamp: string;
 }
 
-const activities: Activity[] = [
-  {
-    id: "1",
-    type: "scan",
-    title: "New scan completed",
-    description: "Score improved from 73 → 78",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "2",
-    type: "fix",
-    title: "Issue resolved",
-    description: "Robots.txt was updated to allow GPTBot",
-    timestamp: "5 hours ago",
-  },
-  {
-    id: "3",
-    type: "improvement",
-    title: "AI traffic spike detected",
-    description: "28 AI visits from ChatGPT yesterday",
-    timestamp: "1 day ago",
-  },
-  {
-    id: "4",
-    type: "alert",
-    title: "New alert generated",
-    description: "Missing JSON-LD structured data",
-    timestamp: "2 days ago",
-  },
-  {
-    id: "5",
-    type: "fix",
-    title: "Issue resolved",
-    description: "Sitemap submitted to Google Search Console",
-    timestamp: "3 days ago",
-  },
-  {
-    id: "6",
-    type: "degradation",
-    title: "Score dropped",
-    description: "1 point decrease from previous scan",
-    timestamp: "5 days ago",
-  },
-];
-
 const activityConfig = {
   scan: {
     icon: (
@@ -124,9 +79,11 @@ const activityConfig = {
 
 interface ActivityFeedProps {
   className?: string;
+  /** Real events reconstructed from the account's scan trail. */
+  activities?: Activity[];
 }
 
-export function ActivityFeed({ className }: ActivityFeedProps) {
+export function ActivityFeed({ className, activities = [] }: ActivityFeedProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {

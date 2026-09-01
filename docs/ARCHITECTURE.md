@@ -43,7 +43,14 @@ The production frontend (`https://visum-eight.vercel.app`) is included by defaul
 ## Frontend (Next.js — Pages Router)
 
 - `/pages/index.js` — Home page with Hero, stats, checks
-- `/pages/result.js` — Scan results page
-- `/pages/email-gate.js` — Email collection gate
+- `/pages/result.js` — Scan results page (requires a signed-in user)
+- `/pages/pricing.js` — Plans: Free, Pro, Ultimate
+- `/pages/login.js`, `/pages/signup.js` — Email/password and Google sign-in
+- `/pages/api/scan.js` — The only way to run a scan: verifies the session,
+  claims quota, proxies the backend, records the scan and its storage cost
+- `/pages/api/account.js` — The signed-in user's plan, quota and storage
+- `/pages/api/auth/callback.js` — OAuth / email-confirmation code exchange
+- `/pages/api/subscription/upgrade.js` — Plan activation (payment-provider seam)
 - `components/` — Reusable UI components
-- `lib/` — API client, analytics, utilities
+- `lib/` — API client, plan catalogue, auth guards, analytics, utilities
+- `lib/server/` — Server-only modules (service-role Supabase access)

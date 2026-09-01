@@ -1,26 +1,52 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, ChevronUp, User, HelpCircle } from "lucide-react";
+import { LogOut, ChevronUp, HelpCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useSidebar } from "./sidebar-context";
+import { useAuth } from "../../lib/auth-context";
+import { useAccount } from "../../lib/account-context";
 import type { UserProfile } from "./types";
 
-const MOCK_USER: UserProfile = {
-  name: "Alex Chen",
-  email: "alex@acme.com",
-  company: "Acme Inc.",
-};
+/**
+ * The display identity for the signed-in user.
+ *
+ * The stored profile wins (it is what the Google sign-in or the sign-up form
+ * recorded); the live session's metadata is the fallback for the moment before
+ * the account has loaded. Someone who signed up with email and never set a
+ * name is shown the local part of their address rather than a placeholder.
+ */
+function deriveProfile(profile: any, authUser: any): UserProfile | null {
+  if (!profile && !authUser) return null;
+  const meta = authUser?.user_metadata || {};
+  const email: string = profile?.email || authUser?.email || "";
+  const name: string =
+    profile?.fullName ||
+    meta.full_name ||
+    meta.name ||
+    (email ? email.split("@")[0] : "Account");
+  const avatar: string = profile?.avatarUrl || meta.avatar_url || meta.picture || "";
+  return { name, email, avatar, company: email ? email.split("@")[1] || "" : "" };
+}
 
 interface UserSectionProps {
   user?: UserProfile;
 }
 
-export function UserSection({ user = MOCK_USER }: UserSectionProps) {
+export function UserSection({ user: userProp }: UserSectionProps) {
   const { expanded } = useSidebar();
+  const { user: authUser, authEnabled, signOut } = useAuth();
+  const { account } = useAccount();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const user =
+    userProp ?? deriveProfile(account?.profile, authEnabled ? authUser : null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -32,7 +58,16 @@ export function UserSection({ user = MOCK_USER }: UserSectionProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const initials = user.name
+  async function handleLogout() {
+    setSigningOut(true);
+    setOpen(false);
+    await signOut();
+    router.replace("/login");
+  }
+
+  if (!user) return null;
+
+  const initials = (user.name || "?")
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -53,10 +88,23 @@ export function UserSection({ user = MOCK_USER }: UserSectionProps) {
         aria-haspopup="true"
         aria-expanded={open}
       >
-        {/* Avatar */}
-        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
-          {initials}
-        </div>
+        {/* Avatar — the provider's picture when there is one, initials when not */}
+        {user.avatar && !avatarBroken ? (
+          // A 28px avatar from an arbitrary identity provider: not worth
+          // next/image plus a remotePatterns entry per provider.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.avatar}
+            alt=""
+            referrerPolicy="no-referrer"
+            onError={() => setAvatarBroken(true)}
+            className="w-7 h-7 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent/10 text-accent text-xs font-bold shrink-0">
+            {initials}
+          </div>
+        )}
 
         <motion.div
           className="flex items-center gap-2 min-w-0 flex-1"
@@ -99,13 +147,16 @@ export function UserSection({ user = MOCK_USER }: UserSectionProps) {
                 Help & Support
               </button>
 
-              <button
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Log out
-              </button>
+              {authEnabled && (
+                <button
+                  onClick={handleLogout}
+                  disabled={signingOut}
+                  className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {signingOut ? "Signing out…" : "Log out"}
+                </button>
+              )}
             </div>
           </motion.div>
         )}

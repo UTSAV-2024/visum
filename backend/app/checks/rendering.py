@@ -46,21 +46,43 @@ def calculate_content_ratio(static_html: str, rendered_html: str) -> float:
     return min(ratio, 1.0)
 
 
-async def check_rendering(static_html: str, rendered_html: str) -> CheckResult:
-    """Check how much content is visible without JavaScript execution."""
+async def check_rendering(static_html: str, rendered_html: str, js_rendered: bool = True) -> CheckResult:
+    """Check how much content is visible without JavaScript execution.
+
+    `js_rendered` is False when the crawler could not run a real browser and
+    fell back to static HTML. In that case static == rendered, so a content
+    ratio would always be 1.0 — a fabricated 10/10. We report measured=False
+    instead and exclude the check from the total rather than inventing a score.
+    """
+
+    if not js_rendered:
+        return CheckResult(
+            name="JavaScript Rendering",
+            score=0,
+            max_score=10,
+            passed=False,
+            partial=False,
+            measured=False,
+            description="Checks how much content AI crawlers can see without executing JavaScript. Many AI bots do not run JS.",
+            finding="Not measured — the headless browser was unavailable, so we could not compare JavaScript-rendered output against the raw HTML. This check was excluded from your score.",
+            fix="This is a limitation on our side, not your site. Re-run the scan; if it persists, the rendering engine may be temporarily unavailable.",
+            details={"ratio": None, "measured": False, "error": "no_js_render"}
+        )
 
     if not rendered_html:
         return CheckResult(
             name="JavaScript Rendering",
-            score=5,
+            score=0,
             max_score=10,
             passed=False,
-            partial=True,
+            partial=False,
+            measured=False,
             description="Checks how much content AI crawlers can see without executing JavaScript.",
-            finding="Could not obtain rendered HTML. Assuming partial JS dependency.",
-            fix="Ensure your site returns meaningful HTML content server-side.",
+            finding="Not measured — no rendered HTML was captured. This check was excluded from your score.",
+            fix="Ensure your site returns meaningful HTML content and re-run the scan.",
             details={
                 "ratio": None,
+                "measured": False,
                 "error": "no_rendered_html"
             }
         )
@@ -125,7 +147,7 @@ async def check_rendering(static_html: str, rendered_html: str) -> CheckResult:
     fix = (
         "Your site renders well without JavaScript."
         if passed
-        else "Consider server-side rendering (Next.js SSR, Nuxt SSR). AgentReady Pro MCP server bypasses this issue entirely."
+        else "Consider server-side rendering (Next.js SSR, Nuxt SSR) so crawlers that don't run JavaScript still see your content."
     )
 
     return CheckResult(

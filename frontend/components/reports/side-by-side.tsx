@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
-import { SCAN_HISTORY } from "./data";
 
-export function SideBySide({ className }) {
+export function SideBySide({ className, scans = [] }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [leftScan, setLeftScan] = useState(SCAN_HISTORY[0]?.id);
-  const [rightScan, setRightScan] = useState(SCAN_HISTORY[1]?.id);
+  const [leftScan, setLeftScan] = useState(scans[0]?.id);
+  const [rightScan, setRightScan] = useState(scans[1]?.id);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  const left = SCAN_HISTORY.find((s) => s.id === leftScan);
-  const right = SCAN_HISTORY.find((s) => s.id === rightScan);
+  // Comparing needs at least two scans.
+  if (scans.length < 2) return null;
+
+  const left = scans.find((s) => s.id === leftScan) || scans[0];
+  const right = scans.find((s) => s.id === rightScan) || scans[1];
 
   if (!left || !right) return null;
 
@@ -50,7 +52,7 @@ export function SideBySide({ className }) {
                 onChange={(e) => side === "left" ? setLeftScan(e.target.value) : setRightScan(e.target.value)}
                 className="w-full rounded-lg border border-border bg-muted/10 px-2.5 py-1.5 text-[10px] font-medium text-foreground outline-none focus:border-accent"
               >
-                {SCAN_HISTORY.map((s) => (
+                {scans.map((s) => (
                   <option key={s.id} value={s.id} disabled={s.id === (side === "left" ? rightScan : leftScan)}>
                     {s.date} — Score: {s.score}
                   </option>
